@@ -86,8 +86,8 @@ resource "snowflake_grant_privileges_to_account_role" "warehouse_usage" {
 }
 
 resource "snowflake_grant_privileges_to_account_role" "database_usage" {
-  for_each   = toset([var.raw_database_name, var.transform_database_name, var.datawarehouse_database_name, var.compliance_database_name])
-  privileges = ["USAGE", "CREATE SCHEMA"]
+  for_each          = toset([var.raw_database_name, var.transform_database_name, var.datawarehouse_database_name, var.compliance_database_name])
+  privileges        = ["USAGE", "CREATE SCHEMA"]
   account_role_name = snowflake_account_role.service_role.name
   on_account_object {
     object_type = "DATABASE"

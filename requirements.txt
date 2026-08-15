@@ -1,6 +1,7 @@
 # Python dependencies
 snowflake-connector-python==3.12.0
 cryptography>=42.0.0,<43.0.0
+pandas>=2.0.0,<3.0.0
 dbt-snowflake==1.8.3
 apache-airflow==2.9.2
 streamlit==1.37.0

@@ -1,17 +1,17 @@
-name: Terraform Plan
+name: Terraform Validate
 
 on:
   pull_request:
     branches: [master]
-    paths:
-      - 'terraform/**'
+  push:
+    branches: [master]
 
 env:
   TF_VAR_snowflake_user: ${{ secrets.SNOWFLAKE_USER }}
   TF_VAR_snowflake_private_key_path: ${{ github.workspace }}/secrets/rsa_key.pem
 
 jobs:
-  terraform-plan:
+  terraform-validate:
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -33,49 +33,13 @@ jobs:
           terraform_version: "1.9.0"
 
       - name: Terraform fmt
-        id: fmt
         run: terraform fmt -check -recursive
 
       - name: Terraform init
-        id: init
         run: terraform init -backend=false
 
       - name: Terraform validate
-        id: validate
         run: terraform validate
 
       - name: Terraform plan
-        id: plan
-        if: github.event_name == 'pull_request'
-        run: |
-          terraform plan -no-color
-        continue-on-error: true
-
-      - name: Update PR comment
-        if: github.event_name == 'pull_request'
-        uses: actions/github-script@v7
-        env:
-          PLAN: "${{ steps.plan.outputs.stdout }}"
-        with:
-          script: |
-            const output = `#### Terraform Format and Style 🖌\`${{ steps.fmt.outcome }}\`
-            #### Terraform Validation 🤖\`${{ steps.validate.outcome }}\`
-            #### Terraform Plan 📖\`${{ steps.plan.outcome }}\`
-
-            <details><summary>Show Plan</summary>
-
-            \`\`\`\n
-            ${process.env.PLAN}
-
-            \`\`\`
-
-            </details>
-
-            *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
-
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: output
-            })
+        run: terraform plan -no-color

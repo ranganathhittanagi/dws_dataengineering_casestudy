@@ -3,14 +3,8 @@ name: dbt CI
 on:
   pull_request:
     branches: [master]
-    paths:
-      - 'dbt/**'
-      - 'requirements.txt'
   push:
     branches: [master]
-    paths:
-      - 'dbt/**'
-      - 'requirements.txt'
 
 env:
   DBT_PROFILES_DIR: ${{ github.workspace }}/dbt

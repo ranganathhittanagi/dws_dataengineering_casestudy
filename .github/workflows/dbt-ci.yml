@@ -1,0 +1,71 @@
+name: dbt CI
+
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - 'dbt/**'
+      - 'requirements.txt'
+  push:
+    branches: [master]
+    paths:
+      - 'dbt/**'
+      - 'requirements.txt'
+
+env:
+  DBT_PROFILES_DIR: ${{ github.workspace }}/dbt
+  DBT_TARGET_PATH: ${{ github.workspace }}/dbt/target
+  SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+  SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+  SNOWFLAKE_ROLE: ${{ secrets.SNOWFLAKE_ROLE }}
+  SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
+  SNOWFLAKE_PRIVATE_KEY_PATH: ${{ github.workspace }}/secrets/rsa_key.p8
+  DBT_TARGET_DATABASE: ${{ secrets.DBT_TARGET_DATABASE }}
+  DBT_TARGET_SCHEMA: ${{ secrets.DBT_TARGET_SCHEMA }}
+
+jobs:
+  dbt-validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          python -m venv .venv
+          . .venv/bin/activate
+          pip install --no-cache-dir -r requirements.txt
+
+      - name: Write private key
+        run: |
+          mkdir -p secrets
+          echo "${{ secrets.SNOWFLAKE_PRIVATE_KEY_B64 }}" | base64 -d > secrets/rsa_key.p8
+
+      - name: dbt deps
+        working-directory: ./dbt
+        run: |
+          . ../.venv/bin/activate
+          dbt deps
+
+      - name: dbt parse
+        working-directory: ./dbt
+        run: |
+          . ../.venv/bin/activate
+          dbt parse --vars '{"etl_date": "2024-01-01"}'
+
+      - name: dbt compile
+        working-directory: ./dbt
+        run: |
+          . ../.venv/bin/activate
+          dbt compile --vars '{"etl_date": "2024-01-01"}'
+
+      - name: dbt test
+        working-directory: ./dbt
+        run: |
+          . ../.venv/bin/activate
+          dbt test --vars '{"etl_date": "2024-01-01"}'

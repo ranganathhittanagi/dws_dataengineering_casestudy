@@ -22,9 +22,9 @@ variable "snowflake_private_key_path" {
 }
 
 variable "snowflake_role" {
-  description = "Snowflake role to use (e.g., ACCOUNTADMIN)"
+  description = "Snowflake role to use for Terraform provisioning"
   type        = string
-  default     = "ACCOUNTADMIN"
+  default     = "DWS_SERVICE_ROLE"
 }
 
 # Resource names

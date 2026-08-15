@@ -6,9 +6,9 @@ trade_data:
       account: "{{ env_var('SNOWFLAKE_ACCOUNT') }}"
       user: "{{ env_var('SNOWFLAKE_USER') }}"
       role: "{{ env_var('SNOWFLAKE_ROLE') }}"
-      database: "{{ env_var('DBT_TARGET_DATABASE', '') }}"
+      database: "{{ env_var('DBT_TARGET_DATABASE', 'RAW_DB') }}"
       warehouse: "{{ env_var('SNOWFLAKE_WAREHOUSE') }}"
-      schema: "{{ env_var('DBT_TARGET_SCHEMA', '') }}"
+      schema: "{{ env_var('DBT_TARGET_SCHEMA', 'RAW_SCHEMA') }}"
       private_key_path: "{{ env_var('SNOWFLAKE_PRIVATE_KEY_PATH') }}"
       private_key_passphrase: ""
       threads: 2

@@ -16,10 +16,9 @@ variable "snowflake_user" {
   type        = string
 }
 
-variable "snowflake_password" {
-  description = "Snowflake admin user password"
+variable "snowflake_private_key_path" {
+  description = "Path to the admin user's RSA private key file (PEM or p8) for key-pair authentication"
   type        = string
-  sensitive   = true
 }
 
 variable "snowflake_role" {

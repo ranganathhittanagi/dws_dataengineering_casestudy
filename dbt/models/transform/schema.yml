@@ -1,0 +1,28 @@
+version: 2
+
+models:
+  - name: stg_trades
+    description: "Cleaned and typed trades from the raw layer. Trims whitespace, casts to proper types, applies coalesce defaults."
+    columns:
+      - name: TRADE_ID
+        description: "Unique trade identifier"
+        tests:
+          - not_null
+      - name: VERSION
+        description: "Trade version number"
+        tests:
+          - not_null
+      - name: COUNTERPARTY
+        description: "Counterparty name, defaults to UNKNOWN"
+      - name: NOTIONAL
+        description: "Notional amount, defaults to 0.00"
+      - name: CURRENCY
+        description: "ISO currency code, defaults to USD"
+      - name: MATURITY_DATE
+        description: "Maturity date (NULL if unparseable from raw)"
+      - name: EXECUTION_DATE
+        description: "Execution date, defaults to today if unparseable"
+      - name: ETL_DATE
+        description: "The etl_date batch this row was processed for"
+      - name: LAST_UPDATED_DATE
+        description: "Timestamp of last transformation"

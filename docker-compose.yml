@@ -1,0 +1,103 @@
+x-airflow-common:
+  &airflow-common
+  image: dws_etl_service_container
+  build:
+    context: .
+    dockerfile: ./airflow/Dockerfile
+  environment:
+    &airflow-common-env
+    AIRFLOW__CORE__EXECUTOR: LocalExecutor
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+    AIRFLOW__CORE__FERNET_KEY: ''
+    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
+    AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+    AIRFLOW__API__AUTH_BACKENDS: 'airflow.api.auth.backend.basic_auth,airflow.api.auth.backend.session'
+    AIRFLOW_HOME: /opt/home/airflow
+    PYTHONPATH: /opt/home
+    DBT_PROFILES_DIR: /opt/home/dbt
+    DBT_LOG_PATH: /opt/home/dbt/logs
+    DBT_TARGET_PATH: /opt/home/dbt/target
+    TRADE_DATA_DIR: /opt/home/data/raw
+    SNOWFLAKE_ACCOUNT: ${SNOWFLAKE_ACCOUNT}
+    SNOWFLAKE_USER: ${SNOWFLAKE_USER}
+    SNOWFLAKE_ROLE: ${SNOWFLAKE_ROLE}
+    SNOWFLAKE_WAREHOUSE: ${SNOWFLAKE_WAREHOUSE}
+    SNOWFLAKE_PRIVATE_KEY_PATH: /opt/home/secrets/rsa_key.p8
+    _AIRFLOW_WWW_USER_PASSWORD: admin
+    AIRFLOW__SMTP__SMTP_HOST: ${AIRFLOW_SMTP_HOST}
+    AIRFLOW__SMTP__SMTP_PORT: ${AIRFLOW_SMTP_PORT}
+    AIRFLOW__SMTP__SMTP_STARTTLS: 'true'
+    AIRFLOW__SMTP__SMTP_SSL: 'false'
+    AIRFLOW__SMTP__SMTP_USER: ${AIRFLOW_SMTP_USER}
+    AIRFLOW__SMTP__SMTP_PASSWORD: ${AIRFLOW_SMTP_PASSWORD}
+    AIRFLOW__SMTP__SMTP_MAIL_FROM: ${AIRFLOW_SMTP_MAIL_FROM}
+    ALERT_EMAIL_TO: ${ALERT_EMAIL_TO}
+    AIRFLOW_CONN_FS_DEFAULT: '{"conn_type": "fs", "extra": {"path": "/"}}'
+  volumes:
+    - ./airflow/dags:/opt/home/airflow/dags
+    - airflow-logs:/opt/home/airflow/logs
+    - ./airflow/plugins:/opt/home/airflow/plugins
+    - ./src:/opt/home/src
+    - ./dbt:/opt/home/dbt
+    - dbt-logs:/opt/home/dbt/logs
+    - dbt-target:/opt/home/dbt/target
+    - ./data:/opt/home/data
+    - ./secrets:/opt/home/secrets
+  depends_on:
+    postgres:
+      condition: service_healthy
+
+volumes:
+  airflow-logs:
+  dbt-logs:
+  dbt-target:
+
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "airflow"]
+      interval: 10s
+      retries: 5
+      start_period: 5s
+    restart: always
+
+  dws_etl_service_container:
+    <<: *airflow-common
+    container_name: dws_etl_service_container
+    hostname: dws_etl
+    user: "0:0"
+    working_dir: /opt/home
+    environment:
+      <<: *airflow-common-env
+      PS1: "dws_etl@\\h:\\w\\$ "
+    command:
+      - bash
+      - -c
+      - |
+        airflow db migrate
+        airflow users create \
+          --username admin \
+          --firstname Admin \
+          --lastname User \
+          --role Admin \
+          --email admin@example.com \
+          --password admin || true
+        airflow scheduler &
+        airflow triggerer &
+        exec airflow webserver
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    restart: always

@@ -1,0 +1,40 @@
+name: trade_data
+version: '1.0.0'
+config-version: 2
+
+profile: trade_data
+
+model-paths: ["models"]
+seed-paths: ["seeds"]
+test-paths: ["tests"]
+analysis-paths: ["analyses"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+models:
+  trade_data:
+    +grants:
+      select: ["{{ env_var('SNOWFLAKE_ROLE') }}", "ACCOUNTADMIN"]
+      insert: ["{{ env_var('SNOWFLAKE_ROLE') }}", "ACCOUNTADMIN"]
+      update: ["{{ env_var('SNOWFLAKE_ROLE') }}", "ACCOUNTADMIN"]
+      delete: ["{{ env_var('SNOWFLAKE_ROLE') }}", "ACCOUNTADMIN"]
+    raw:
+      +materialized: copy_into_table
+      +database: RAW_DB
+      +schema: RAW_SCHEMA
+    transform:
+      +materialized: incremental
+      +database: TRANSFORM_DB
+      +schema: TRANSFORM_SCHEMA
+    datawarehouse:
+      +materialized: incremental
+      +database: DATAWAREHOUSE_DB
+      +schema: DATAWAREHOUSE_SCHEMA
+    compliance:
+      +materialized: incremental
+      +database: COMPLIANCE_DB
+      +schema: COMPLIANCE_SCHEMA

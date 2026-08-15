@@ -1,0 +1,22 @@
+version: 2
+
+models:
+  - name: trades
+    description: "Bronze layer - raw trades COPY-INTO'd from the CSV stage. All fields stored as VARCHAR so no row is lost to a type-cast failure."
+    columns:
+      - name: TRADE_ID
+        description: "Trade identifier (string)"
+      - name: VERSION
+        description: "Trade version (string)"
+      - name: COUNTERPARTY
+        description: "Counterparty name (string)"
+      - name: NOTIONAL
+        description: "Notional amount (string)"
+      - name: CURRENCY
+        description: "Currency code (string)"
+      - name: MATURITY_DATE
+        description: "Maturity date (string)"
+      - name: EXECUTION_DATE
+        description: "Execution date (string)"
+      - name: ETL_DATE
+        description: "The etl_date batch this row was loaded for"

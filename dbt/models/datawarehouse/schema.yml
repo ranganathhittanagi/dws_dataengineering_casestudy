@@ -1,0 +1,29 @@
+version: 2
+
+models:
+  - name: valid_trades
+    description: "Merged store of accepted trades, one row per TRADE_ID (latest version), incrementally merged. Rejects trades with a null/earlier-than-execution maturity date or a version lower than what's already stored. TRADE_STATUS is recomputed every run for all rows so trades transition to EXPIRED once their maturity date passes."
+    columns:
+      - name: TRADE_ID
+        description: "Unique trade identifier"
+        tests:
+          - not_null
+          - unique
+      - name: VERSION
+        description: "Latest accepted trade version number"
+      - name: COUNTERPARTY
+        description: "Counterparty name"
+      - name: NOTIONAL
+        description: "Notional amount"
+      - name: CURRENCY
+        description: "ISO currency code"
+      - name: MATURITY_DATE
+        description: "Maturity date"
+      - name: EXECUTION_DATE
+        description: "Execution date"
+      - name: TRADE_STATUS
+        description: "ACTIVE or EXPIRED (EXPIRED once MATURITY_DATE has passed)"
+      - name: ETL_DATE
+        description: "The etl_date batch this row was last accepted/updated for"
+      - name: LAST_UPDATED_DATE
+        description: "Timestamp of last update"

@@ -1,0 +1,17 @@
+@startuml
+!theme plain
+title Trade ETL Pipeline Architecture
+
+rectangle "Ingestion" as ingestion
+rectangle "Snowflake" as snowflake
+rectangle "DBT" as dbt
+rectangle "Airflow" as airflow
+rectangle "Streamlit" as streamlit
+
+ingestion -> snowflake : Load raw trades
+airflow -> ingestion : Trigger generate + load
+airflow -> dbt : Trigger transformations
+dbt -> snowflake : Write valid / rejected tables
+streamlit -> snowflake : Read trade statuses
+
+@enduml

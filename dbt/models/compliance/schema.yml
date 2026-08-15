@@ -1,0 +1,30 @@
+version: 2
+
+models:
+  - name: rejected_trades
+    description: "Trades that fail validation rules, with a REJECTION_REASON explaining why."
+    columns:
+      - name: TRADE_ID
+        description: "Unique trade identifier"
+        tests:
+          - not_null
+      - name: VERSION
+        description: "Trade version number"
+      - name: COUNTERPARTY
+        description: "Counterparty name"
+      - name: NOTIONAL
+        description: "Notional amount"
+      - name: CURRENCY
+        description: "ISO currency code"
+      - name: MATURITY_DATE
+        description: "Maturity date (may be NULL if unparseable)"
+      - name: EXECUTION_DATE
+        description: "Execution date"
+      - name: REJECTION_REASON
+        description: "Reason the trade was rejected: INVALID_MATURITY_DATE, MATURITY_BEFORE_EXECUTION, or STALE_VERSION"
+        tests:
+          - not_null
+      - name: ETL_DATE
+        description: "The etl_date batch this row was processed for"
+      - name: LAST_UPDATED_DATE
+        description: "Timestamp of last update"

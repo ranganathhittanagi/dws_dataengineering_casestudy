@@ -12,7 +12,7 @@ concurrency:
 
 env:
   TF_VAR_snowflake_user: ${{ secrets.SNOWFLAKE_USER }}
-  TF_VAR_snowflake_private_key_path: ${{ github.workspace }}/secrets/rsa_key.p8
+  TF_VAR_snowflake_private_key_path: ${{ github.workspace }}/secrets/rsa_key.pem
 
 jobs:
   terraform-apply:
@@ -25,10 +25,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Write private key
+      - name: Write private and public key files
         run: |
           mkdir -p ${{ github.workspace }}/secrets
           echo "${{ secrets.SNOWFLAKE_PRIVATE_KEY_B64 }}" | base64 -d > ${{ github.workspace }}/secrets/rsa_key.p8
+          openssl pkey -in ${{ github.workspace }}/secrets/rsa_key.p8 -out ${{ github.workspace }}/secrets/rsa_key.pem
+          openssl pkey -in ${{ github.workspace }}/secrets/rsa_key.p8 -pubout -out ${{ github.workspace }}/secrets/rsa_key.pub
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3

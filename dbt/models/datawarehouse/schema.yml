@@ -17,12 +17,20 @@ models:
         description: "Notional amount"
       - name: CURRENCY
         description: "ISO currency code"
+        tests:
+          - accepted_values:
+              values: ['USD', 'EUR', 'GBP', 'JPY', 'AUD', 'CAD', 'CHF']
       - name: MATURITY_DATE
         description: "Maturity date"
+        tests:
+          - not_null
       - name: EXECUTION_DATE
         description: "Execution date"
       - name: TRADE_STATUS
         description: "ACTIVE or EXPIRED (EXPIRED once MATURITY_DATE has passed)"
+        tests:
+          - accepted_values:
+              values: ['ACTIVE', 'EXPIRED']
       - name: ETL_DATE
         description: "The etl_date batch this row was last accepted/updated for"
       - name: LAST_UPDATED_DATE

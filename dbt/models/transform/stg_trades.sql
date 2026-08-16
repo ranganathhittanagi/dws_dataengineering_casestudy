@@ -27,6 +27,29 @@ cleaned as (
         CURRENT_TIMESTAMP()::TIMESTAMP_NTZ                         as LAST_UPDATED_DATE
     from raw_trades
 
+),
+
+deduplicated as (
+
+    select
+        *,
+        row_number() over (
+            partition by TRADE_ID, VERSION
+            order by ETL_DATE desc
+        ) as rn
+    from cleaned
+
 )
 
-select * from cleaned
+select
+    TRADE_ID,
+    VERSION,
+    COUNTERPARTY,
+    NOTIONAL,
+    CURRENCY,
+    MATURITY_DATE,
+    EXECUTION_DATE,
+    ETL_DATE,
+    LAST_UPDATED_DATE
+from deduplicated
+where rn = 1

@@ -4,6 +4,12 @@ Cloud-native ETL pipeline for daily trade data ingestion, validation, and report
 
 ---
 
+## dbt Documentation
+
+View the live dbt docs: [dbt Docs](https://ranganathhittanagi.github.io/dws_dataengineering_casestudy/dbt_docs/)
+
+---
+
 ## Architecture
 
 ![Architecture Diagram](docs/architecture_diagram.png)

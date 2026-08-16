@@ -1,10 +1,11 @@
 {%- set etl_date = var('etl_date', run_started_at.strftime('%Y-%m-%d')) -%}
+{%- set late_arrival_date = (modules.datetime.datetime.strptime(etl_date, '%Y-%m-%d') - modules.datetime.timedelta(days=1)).strftime('%Y-%m-%d') -%}
 
 {{ config(
     materialized='copy_into_table',
     stage='@RAW_DB.RAW_SCHEMA.RAW_DATA_STAGE',
     file_format='RAW_DB.RAW_SCHEMA.CSV_FORMAT',
-    copy_options="ON_ERROR = 'CONTINUE' FORCE = FALSE PURGE = FALSE PATTERN = '.*trades_" ~ etl_date ~ ".*'"
+    copy_options="ON_ERROR = 'CONTINUE' FORCE = FALSE PURGE = FALSE PATTERN = '.*trades_(" ~ late_arrival_date ~ "|" ~ etl_date ~ ").*'"
 ) }}
 
 select
@@ -15,5 +16,5 @@ select
     $5::VARCHAR  as CURRENCY,
     $6::VARCHAR  as MATURITY_DATE,
     $7::VARCHAR  as EXECUTION_DATE,
-    '{{ etl_date }}'::DATE as ETL_DATE
+    TRY_TO_DATE(REGEXP_SUBSTR(METADATA$FILENAME, 'trades_(\\d{4}-\\d{2}-\\d{2})', 1, 1, 'e')) as ETL_DATE
 from @RAW_DB.RAW_SCHEMA.RAW_DATA_STAGE

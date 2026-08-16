@@ -6,11 +6,12 @@
 ) }}
 
 {%- set etl_date = var('etl_date', run_started_at.strftime('%Y-%m-%d')) -%}
+{%- set late_arrival_date = (modules.datetime.datetime.strptime(etl_date, '%Y-%m-%d') - modules.datetime.timedelta(days=1)).strftime('%Y-%m-%d') -%}
 
 with new_trades as (
 
     select * from {{ ref('stg_trades') }}
-    where ETL_DATE = '{{ etl_date }}'
+    where ETL_DATE between '{{ late_arrival_date }}' and '{{ etl_date }}'
 
 ),
 

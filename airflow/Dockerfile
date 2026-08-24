@@ -3,7 +3,7 @@ FROM apache/airflow:2.9.2
 USER root
 
 RUN apt-get update && apt-get install -y --no-install-recommends gcc git && rm -rf /var/lib/apt/lists/* \
-    && mkdir -p /opt/home/airflow /opt/home/src /opt/home/dbt /opt/home/data /opt/home/secrets /opt/home/dbt_venv
+    && mkdir -p /opt/home/airflow /opt/home/src /opt/home/dbt /opt/home/data /opt/home/dbt_venv
 
 # Remove the default Airflow home and other unused base-image directories so /opt only contains /opt/home.
 RUN rm -rf /opt/airflow /opt/dbt /opt/microsoft

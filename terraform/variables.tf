@@ -16,9 +16,10 @@ variable "snowflake_user" {
   type        = string
 }
 
-variable "snowflake_private_key_path" {
-  description = "Path to the admin user's RSA private key file (PEM or p8) for key-pair authentication"
+variable "snowflake_private_key_param" {
+  description = "SSM SecureString parameter holding the admin (snowflake_user) RSA private key Terraform authenticates with"
   type        = string
+  default     = "/dws/snowflake/admin/private_key"
 }
 
 variable "snowflake_role" {
@@ -94,8 +95,45 @@ variable "service_role_name" {
   default     = "DWS_SERVICE_ROLE"
 }
 
-variable "service_user_public_key_file" {
-  description = "Path to the service user's RSA public key PEM file (relative to the terraform directory)"
+# AWS / S3 source
+variable "aws_region" {
+  description = "AWS region hosting the S3 landing bucket and SSM parameters"
   type        = string
-  default     = "../secrets/rsa_key.pub"
+  default     = "ap-south-1"
+}
+
+variable "aws_profile" {
+  description = "Local AWS CLI profile used by Terraform. Leave null to use the default credential chain (e.g. an IAM role)."
+  type        = string
+  default     = null
+}
+
+variable "s3_bucket_name" {
+  description = "Existing S3 bucket holding raw trade files"
+  type        = string
+  default     = "trades-source-dws"
+}
+
+variable "s3_source_prefix" {
+  description = "Key prefix within the bucket where trade files land"
+  type        = string
+  default     = "raw/trades"
+}
+
+variable "storage_integration_name" {
+  description = "Name of the Snowflake storage integration for S3"
+  type        = string
+  default     = "S3_TRADES_INTEGRATION"
+}
+
+variable "snowflake_integration_role_name" {
+  description = "Name of the IAM role Snowflake assumes to read from S3"
+  type        = string
+  default     = "snowflake-trades-s3-access"
+}
+
+variable "service_user_public_key_param" {
+  description = "SSM parameter holding the service user's RSA public key PEM"
+  type        = string
+  default     = "/dws/snowflake/dws-service-user/public_key"
 }

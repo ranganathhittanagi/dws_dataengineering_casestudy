@@ -1,5 +1,5 @@
 locals {
-  raw_public_key = file(var.service_user_public_key_file)
+  raw_public_key = data.aws_ssm_parameter.service_user_public_key.value
   service_user_public_key = trimspace(
     replace(
       replace(
@@ -130,12 +130,21 @@ resource "snowflake_file_format" "csv" {
   skip_header = 1
 }
 
+# External stage over the S3 landing prefix. dbt's raw model reads from this stage,
+# so the bronze table is populated straight from S3 with no local PUT step.
 resource "snowflake_stage" "raw_data" {
-  name        = "RAW_DATA_STAGE"
-  database    = snowflake_database.raw.name
-  schema      = snowflake_schema.raw.name
-  file_format = "FORMAT_NAME = ${snowflake_database.raw.name}.${snowflake_schema.raw.name}.${snowflake_file_format.csv.name}"
-  depends_on  = [snowflake_file_format.csv]
+  name                = "RAW_DATA_STAGE"
+  database            = snowflake_database.raw.name
+  schema              = snowflake_schema.raw.name
+  url                 = local.s3_stage_url
+  storage_integration = snowflake_storage_integration.s3.name
+  file_format         = "FORMAT_NAME = ${snowflake_database.raw.name}.${snowflake_schema.raw.name}.${snowflake_file_format.csv.name}"
+  comment             = "External stage backed by the S3 trades landing prefix."
+
+  depends_on = [
+    snowflake_file_format.csv,
+    time_sleep.wait_for_iam_propagation,
+  ]
 }
 
 resource "snowflake_grant_privileges_to_account_role" "file_format_usage" {

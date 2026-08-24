@@ -17,12 +17,19 @@ x-airflow-common:
     DBT_PROFILES_DIR: /opt/home/dbt
     DBT_LOG_PATH: /opt/home/dbt/logs
     DBT_TARGET_PATH: /opt/home/dbt/target
-    TRADE_DATA_DIR: /opt/home/data/raw
     SNOWFLAKE_ACCOUNT: ${SNOWFLAKE_ACCOUNT}
     SNOWFLAKE_USER: ${SNOWFLAKE_USER}
     SNOWFLAKE_ROLE: ${SNOWFLAKE_ROLE}
     SNOWFLAKE_WAREHOUSE: ${SNOWFLAKE_WAREHOUSE}
-    SNOWFLAKE_PRIVATE_KEY_PATH: /opt/home/secrets/rsa_key.p8
+    # The RSA key pair is read at runtime from SSM Parameter Store; never stored here.
+    SNOWFLAKE_PARAM_PATH: ${SNOWFLAKE_PARAM_PATH:-/dws/snowflake/dws-service-user}
+    S3_BUCKET: ${S3_BUCKET:-trades-source-dws}
+    S3_PREFIX: ${S3_PREFIX:-raw/trades}
+    AWS_REGION: ${AWS_REGION:-ap-south-1}
+    AWS_DEFAULT_REGION: ${AWS_REGION:-ap-south-1}
+    AWS_PROFILE: ${AWS_PROFILE:-dws-pipeline}
+    AWS_SHARED_CREDENTIALS_FILE: /opt/home/.aws/credentials
+    AWS_CONFIG_FILE: /opt/home/.aws/config
     _AIRFLOW_WWW_USER_PASSWORD: admin
     AIRFLOW__SMTP__SMTP_HOST: ${AIRFLOW_SMTP_HOST}
     AIRFLOW__SMTP__SMTP_PORT: ${AIRFLOW_SMTP_PORT}
@@ -32,7 +39,8 @@ x-airflow-common:
     AIRFLOW__SMTP__SMTP_PASSWORD: ${AIRFLOW_SMTP_PASSWORD}
     AIRFLOW__SMTP__SMTP_MAIL_FROM: ${AIRFLOW_SMTP_MAIL_FROM}
     ALERT_EMAIL_TO: ${ALERT_EMAIL_TO}
-    AIRFLOW_CONN_FS_DEFAULT: '{"conn_type": "fs", "extra": {"path": "/"}}'
+    # Resolves AWS credentials via the mounted profile / default boto3 chain.
+    AIRFLOW_CONN_AWS_DEFAULT: '{"conn_type": "aws", "extra": {"region_name": "${AWS_REGION:-ap-south-1}"}}'
   volumes:
     - ./airflow/dags:/opt/home/airflow/dags
     - airflow-logs:/opt/home/airflow/logs
@@ -42,7 +50,8 @@ x-airflow-common:
     - dbt-logs:/opt/home/dbt/logs
     - dbt-target:/opt/home/dbt/target
     - ./data:/opt/home/data
-    - ./secrets:/opt/home/secrets
+    # Local AWS credentials for development only; replaced by an IAM role on AWS compute.
+    - ${HOME}/.aws:/opt/home/.aws:ro
   depends_on:
     postgres:
       condition: service_healthy

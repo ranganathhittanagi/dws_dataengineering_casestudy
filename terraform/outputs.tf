@@ -87,3 +87,30 @@ output "keypair_note" {
   description = "Authentication reminder"
   value       = "Use the private key file matching the RSA public key configured on ${snowflake_user.service_user.name}."
 }
+
+# --- EC2 deployment ---
+
+output "airflow_url" {
+  description = "Airflow webserver entry point (HTTP, restricted to the admin IP allowlist)"
+  value       = "http://${aws_lb.airflow.dns_name}"
+}
+
+output "sns_alert_topic_arn" {
+  description = "SNS topic receiving pipeline and infrastructure failure alerts"
+  value       = aws_sns_topic.pipeline_alerts.arn
+}
+
+output "control_instance_id" {
+  description = "Airflow control-plane EC2 instance (connect with: aws ssm start-session --target <id>)"
+  value       = aws_instance.airflow_control.id
+}
+
+output "control_private_ip" {
+  description = "Private IP workers use to reach Postgres/Redis on the control plane"
+  value       = aws_instance.airflow_control.private_ip
+}
+
+output "dev_instance_id" {
+  description = "dev-ec2-instance (Celery worker + ad hoc dev box; connect with: aws ssm start-session --target <id>)"
+  value       = aws_instance.dev_ec2.id
+}

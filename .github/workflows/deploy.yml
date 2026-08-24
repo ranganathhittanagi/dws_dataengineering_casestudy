@@ -1,0 +1,93 @@
+name: Deploy to EC2
+
+# Deploys the latest master to both Airflow EC2 instances via SSM Run Command
+# (no SSH, no inbound ports): git pull + docker compose up on each node.
+# Both nodes deploy from the same trigger, keeping DAG/dbt code identical across the
+# scheduler and Celery workers (a CeleryExecutor requirement).
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'airflow/**'
+      - 'dbt/**'
+      - 'src/**'
+      - 'deploy/**'
+      - 'requirements.txt'
+  workflow_dispatch: {}
+
+env:
+  AWS_REGION: ap-south-1
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Deploy control plane
+        run: |
+          CMD_ID=$(aws ssm send-command \
+            --document-name "AWS-RunShellScript" \
+            --targets "Key=tag:Role,Values=airflow-control" \
+            --comment "Deploy ${GITHUB_SHA::7} (control)" \
+            --parameters 'commands=[
+              "set -e",
+              "cd /opt/app",
+              "git pull --ff-only",
+              "export AWS_REGION=ap-south-1",
+              "bash deploy/fetch_runtime_env.sh control",
+              "docker compose -f deploy/docker-compose.control.yml build",
+              "docker compose -f deploy/docker-compose.control.yml up -d"
+            ]' \
+            --query 'Command.CommandId' --output text)
+          echo "control command: $CMD_ID"
+          aws ssm list-command-invocations --command-id "$CMD_ID" --details \
+            --query 'CommandInvocations[].Status' --output text
+          # Wait for completion
+          for i in $(seq 1 60); do
+            STATUS=$(aws ssm list-command-invocations --command-id "$CMD_ID" \
+              --query 'CommandInvocations[0].Status' --output text)
+            echo "status: $STATUS"
+            case "$STATUS" in
+              Success) exit 0 ;;
+              Failed|Cancelled|TimedOut) exit 1 ;;
+            esac
+            sleep 10
+          done
+          exit 1
+
+      - name: Deploy dev-ec2-instance
+        run: |
+          CMD_ID=$(aws ssm send-command \
+            --document-name "AWS-RunShellScript" \
+            --targets "Key=tag:Role,Values=dev-ec2-instance" \
+            --comment "Deploy ${GITHUB_SHA::7} (dev-ec2-instance)" \
+            --parameters 'commands=[
+              "set -e",
+              "cd /opt/app",
+              "git pull --ff-only",
+              "export AWS_REGION=ap-south-1",
+              "bash deploy/fetch_runtime_env.sh dev",
+              "docker compose -f deploy/docker-compose.dev.yml build",
+              "docker compose -f deploy/docker-compose.dev.yml up -d"
+            ]' \
+            --query 'Command.CommandId' --output text)
+          echo "dev-ec2-instance command: $CMD_ID"
+          for i in $(seq 1 60); do
+            STATUS=$(aws ssm list-command-invocations --command-id "$CMD_ID" \
+              --query 'CommandInvocations[0].Status' --output text)
+            echo "status: $STATUS"
+            case "$STATUS" in
+              Success) exit 0 ;;
+              Failed|Cancelled|TimedOut) exit 1 ;;
+            esac
+            sleep 10
+          done
+          exit 1

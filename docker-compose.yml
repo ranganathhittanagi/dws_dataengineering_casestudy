@@ -31,14 +31,8 @@ x-airflow-common:
     AWS_SHARED_CREDENTIALS_FILE: /opt/home/.aws/credentials
     AWS_CONFIG_FILE: /opt/home/.aws/config
     _AIRFLOW_WWW_USER_PASSWORD: admin
-    AIRFLOW__SMTP__SMTP_HOST: ${AIRFLOW_SMTP_HOST}
-    AIRFLOW__SMTP__SMTP_PORT: ${AIRFLOW_SMTP_PORT}
-    AIRFLOW__SMTP__SMTP_STARTTLS: 'true'
-    AIRFLOW__SMTP__SMTP_SSL: 'false'
-    AIRFLOW__SMTP__SMTP_USER: ${AIRFLOW_SMTP_USER}
-    AIRFLOW__SMTP__SMTP_PASSWORD: ${AIRFLOW_SMTP_PASSWORD}
-    AIRFLOW__SMTP__SMTP_MAIL_FROM: ${AIRFLOW_SMTP_MAIL_FROM}
-    ALERT_EMAIL_TO: ${ALERT_EMAIL_TO}
+    # Failure alerts publish to SNS (topic managed in terraform/sns.tf).
+    SNS_ALERT_TOPIC_ARN: ${SNS_ALERT_TOPIC_ARN}
     # Resolves AWS credentials via the mounted profile / default boto3 chain.
     AIRFLOW_CONN_AWS_DEFAULT: '{"conn_type": "aws", "extra": {"region_name": "${AWS_REGION:-ap-south-1}"}}'
   volumes:

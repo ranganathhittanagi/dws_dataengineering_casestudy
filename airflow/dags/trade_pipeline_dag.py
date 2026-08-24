@@ -7,7 +7,7 @@ This DAG:
      bronze table straight from the S3 external stage, so no bytes move through
      Airflow (blocking - failures stop the DAG).
   3. Runs dbt tests for the same etl_date (blocking - failures stop the DAG and trigger
-     an email alert via Airflow's default email_on_failure behavior).
+     an email alert published to the SNS topic via the on_failure_callback).
 
 The Snowflake private key is pulled from AWS SSM Parameter Store at task runtime and
 passed to dbt as a process environment variable, so it never lands on disk or in XCom.
@@ -20,6 +20,7 @@ from airflow import DAG
 from airflow.operators.python import PythonOperator
 from airflow.providers.amazon.aws.sensors.s3 import S3KeySensor
 
+from src.alerting import notify_failure
 from src.config import dbt_environment
 
 DBT_PROJECT_DIR = "/opt/home/dbt"
@@ -31,13 +32,12 @@ DBT_BIN = ["/opt/home/dbt_venv/bin/python", "-I", "/opt/home/dbt_venv/bin/dbt"]
 S3_BUCKET = os.getenv("S3_BUCKET", "trades-source-dws")
 S3_PREFIX = os.getenv("S3_PREFIX", "raw/trades").strip("/")
 AWS_CONN_ID = os.getenv("AWS_CONN_ID", "aws_default")
-ALERT_EMAIL_TO = [os.environ["ALERT_EMAIL_TO"]] if os.getenv("ALERT_EMAIL_TO") else []
 
 default_args = {
     "owner": "data-engineering",
-    "email": ALERT_EMAIL_TO,
-    "email_on_failure": True,
-    "email_on_retry": False,
+    # Alerts go to SNS (email subscription managed in Terraform); fires only when a task
+    # reaches its final failed state, matching the old email_on_failure semantics.
+    "on_failure_callback": notify_failure,
     "retries": 0,
 }
 

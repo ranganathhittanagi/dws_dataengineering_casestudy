@@ -137,3 +137,56 @@ variable "service_user_public_key_param" {
   type        = string
   default     = "/dws/snowflake/dws-service-user/public_key"
 }
+
+# --- EC2 deployment (Airflow CeleryExecutor across two instances) ---
+
+variable "project_name" {
+  description = "Prefix applied to AWS resource names for this deployment"
+  type        = string
+  default     = "dws-airflow"
+}
+
+variable "vpc_cidr" {
+  description = "CIDR block for the pipeline VPC"
+  type        = string
+  default     = "10.20.0.0/16"
+}
+
+variable "admin_ip_allowlist" {
+  description = "CIDR blocks allowed to reach the Airflow webserver via the ALB (e.g. [\"203.0.113.10/32\"]). Keep this tight."
+  type        = list(string)
+}
+
+variable "control_instance_type" {
+  description = "Instance type for the Airflow control plane (webserver+scheduler+Postgres+Redis). t3.small (2GB) is the realistic minimum; t3.micro fits free tier but will swap heavily."
+  type        = string
+  default     = "t3.small"
+}
+
+variable "dev_instance_type" {
+  description = "Instance type for dev-ec2-instance (Celery worker executing ingestion/dbt, and ad hoc dev box)"
+  type        = string
+  default     = "t3.micro"
+}
+
+variable "repo_url" {
+  description = "HTTPS git URL of this repository, cloned onto the instances at boot (must be public or reachable without credentials)"
+  type        = string
+}
+
+variable "repo_branch" {
+  description = "Git branch deployed to the instances"
+  type        = string
+  default     = "master"
+}
+
+variable "airflow_param_path" {
+  description = "SSM parameter path prefix for Airflow runtime secrets/discovery values"
+  type        = string
+  default     = "/dws/airflow"
+}
+
+variable "alert_emails" {
+  description = "Email addresses subscribed to the SNS alert topic (each must confirm the subscription email once)"
+  type        = list(string)
+}

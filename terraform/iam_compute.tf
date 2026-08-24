@@ -141,3 +141,52 @@ resource "aws_iam_instance_profile" "dev_ec2" {
   name = "${var.project_name}-dev-profile"
   role = aws_iam_role.dev_ec2.name
 }
+
+# --- CloudWatch EC2 stop action role ---
+# CloudWatch alarm actions like arn:aws:automate:<region>:ec2:stop require this
+# specially-named role. If it already exists in the AWS account, run:
+#   terraform import aws_iam_role.ec2_actions EC2ActionsAccess
+# before the next terraform apply.
+
+data "aws_iam_policy_document" "cloudwatch_assume" {
+  statement {
+    effect  = "Allow"
+    actions = ["sts:AssumeRole"]
+
+    principals {
+      type        = "Service"
+      identifiers = ["cloudwatch.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_iam_role" "ec2_actions" {
+  name               = "EC2ActionsAccess"
+  description        = "Allows CloudWatch to stop idle EC2 instances"
+  assume_role_policy = data.aws_iam_policy_document.cloudwatch_assume.json
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
+data "aws_iam_policy_document" "ec2_actions" {
+  statement {
+    sid    = "StopIdleInstances"
+    effect = "Allow"
+    actions = [
+      "ec2:StopInstances",
+      "ec2:DescribeInstances",
+    ]
+    resources = [
+      aws_instance.airflow_control.arn,
+      aws_instance.dev_ec2.arn,
+    ]
+  }
+}
+
+resource "aws_iam_role_policy" "ec2_actions" {
+  name   = "${var.project_name}-ec2-stop"
+  role   = aws_iam_role.ec2_actions.id
+  policy = data.aws_iam_policy_document.ec2_actions.json
+}

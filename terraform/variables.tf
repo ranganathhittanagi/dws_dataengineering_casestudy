@@ -153,8 +153,9 @@ variable "vpc_cidr" {
 }
 
 variable "admin_ip_allowlist" {
-  description = "CIDR blocks allowed to reach the Airflow webserver via the ALB (e.g. [\"203.0.113.10/32\"]). Keep this tight."
+  description = "CIDR blocks allowed to reach the Airflow webserver via the ALB. Defaults to open (0.0.0.0/0); override in terraform.tfvars to restrict."
   type        = list(string)
+  default     = ["0.0.0.0/0"]
 }
 
 variable "control_instance_type" {
@@ -167,6 +168,18 @@ variable "dev_instance_type" {
   description = "Instance type for dev-ec2-instance (Celery worker executing ingestion/dbt, and ad hoc dev box)"
   type        = string
   default     = "t3.micro"
+}
+
+variable "idle_cpu_threshold" {
+  description = "Average CPU % below which an EC2 instance is considered idle and auto-stopped by CloudWatch"
+  type        = number
+  default     = 5
+}
+
+variable "idle_evaluation_periods" {
+  description = "Number of 15-minute periods with low CPU before CloudWatch triggers an EC2 stop (e.g. 2 = 30 minutes)"
+  type        = number
+  default     = 2
 }
 
 variable "repo_url" {

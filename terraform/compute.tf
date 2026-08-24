@@ -235,3 +235,53 @@ resource "aws_cloudwatch_metric_alarm" "dev_ec2_recover" {
     aws_sns_topic.pipeline_alerts.arn,
   ]
 }
+
+# --- Idle auto-stop alarms ---
+# Stop both instances when CPU stays below the threshold for 30 consecutive minutes
+# to keep the AWS bill low. They must be started manually when you want to use Airflow again.
+
+resource "aws_cloudwatch_metric_alarm" "control_idle" {
+  alarm_name          = "${var.project_name}-control-idle-stop"
+  alarm_description   = "Stop the Airflow control instance after 30 minutes of low CPU"
+  namespace           = "AWS/EC2"
+  metric_name         = "CPUUtilization"
+  statistic           = "Average"
+  comparison_operator = "LessThanThreshold"
+  threshold           = var.idle_cpu_threshold
+  period              = 900
+  evaluation_periods  = var.idle_evaluation_periods
+
+  dimensions = {
+    InstanceId = aws_instance.airflow_control.id
+  }
+
+  alarm_actions = [
+    "arn:aws:automate:${var.aws_region}:ec2:stop",
+    aws_sns_topic.pipeline_alerts.arn,
+  ]
+
+  ok_actions = [aws_sns_topic.pipeline_alerts.arn]
+}
+
+resource "aws_cloudwatch_metric_alarm" "dev_idle" {
+  alarm_name          = "${var.project_name}-dev-idle-stop"
+  alarm_description   = "Stop dev-ec2-instance after 30 minutes of low CPU"
+  namespace           = "AWS/EC2"
+  metric_name         = "CPUUtilization"
+  statistic           = "Average"
+  comparison_operator = "LessThanThreshold"
+  threshold           = var.idle_cpu_threshold
+  period              = 900
+  evaluation_periods  = var.idle_evaluation_periods
+
+  dimensions = {
+    InstanceId = aws_instance.dev_ec2.id
+  }
+
+  alarm_actions = [
+    "arn:aws:automate:${var.aws_region}:ec2:stop",
+    aws_sns_topic.pipeline_alerts.arn,
+  ]
+
+  ok_actions = [aws_sns_topic.pipeline_alerts.arn]
+}

@@ -9,7 +9,7 @@ trade_data:
       database: "{{ env_var('DBT_TARGET_DATABASE', 'RAW_DB') }}"
       warehouse: "{{ env_var('SNOWFLAKE_WAREHOUSE') }}"
       schema: "{{ env_var('DBT_TARGET_SCHEMA', 'RAW_SCHEMA') }}"
-      private_key_path: "{{ env_var('SNOWFLAKE_PRIVATE_KEY_PATH') }}"
-      private_key_passphrase: ""
+      # PEM injected at runtime from AWS SSM Parameter Store (see src/config.dbt_environment).
+      private_key: "{{ env_var('SNOWFLAKE_PRIVATE_KEY') }}"
       threads: 2
       client_session_keep_alive: false

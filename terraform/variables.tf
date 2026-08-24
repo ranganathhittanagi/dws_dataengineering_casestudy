@@ -16,9 +16,10 @@ variable "snowflake_user" {
   type        = string
 }
 
-variable "snowflake_private_key_path" {
-  description = "Path to the admin user's RSA private key file (PEM or p8) for key-pair authentication"
+variable "snowflake_private_key_param" {
+  description = "SSM SecureString parameter holding the admin (snowflake_user) RSA private key Terraform authenticates with"
   type        = string
+  default     = "/dws/snowflake/admin/private_key"
 }
 
 variable "snowflake_role" {
@@ -94,8 +95,111 @@ variable "service_role_name" {
   default     = "DWS_SERVICE_ROLE"
 }
 
-variable "service_user_public_key_file" {
-  description = "Path to the service user's RSA public key PEM file (relative to the terraform directory)"
+# AWS / S3 source
+variable "aws_region" {
+  description = "AWS region hosting the S3 landing bucket and SSM parameters"
   type        = string
-  default     = "../secrets/rsa_key.pub"
+  default     = "ap-south-1"
+}
+
+variable "aws_profile" {
+  description = "Local AWS CLI profile used by Terraform. Leave null to use the default credential chain (e.g. an IAM role)."
+  type        = string
+  default     = null
+}
+
+variable "s3_bucket_name" {
+  description = "Existing S3 bucket holding raw trade files"
+  type        = string
+  default     = "trades-source-dws"
+}
+
+variable "s3_source_prefix" {
+  description = "Key prefix within the bucket where trade files land"
+  type        = string
+  default     = "raw/trades"
+}
+
+variable "storage_integration_name" {
+  description = "Name of the Snowflake storage integration for S3"
+  type        = string
+  default     = "S3_TRADES_INTEGRATION"
+}
+
+variable "snowflake_integration_role_name" {
+  description = "Name of the IAM role Snowflake assumes to read from S3"
+  type        = string
+  default     = "snowflake-trades-s3-access"
+}
+
+variable "service_user_public_key_param" {
+  description = "SSM parameter holding the service user's RSA public key PEM"
+  type        = string
+  default     = "/dws/snowflake/dws-service-user/public_key"
+}
+
+# --- EC2 deployment (Airflow CeleryExecutor across two instances) ---
+
+variable "project_name" {
+  description = "Prefix applied to AWS resource names for this deployment"
+  type        = string
+  default     = "dws-airflow"
+}
+
+variable "vpc_cidr" {
+  description = "CIDR block for the pipeline VPC"
+  type        = string
+  default     = "10.20.0.0/16"
+}
+
+variable "admin_ip_allowlist" {
+  description = "CIDR blocks allowed to reach the Airflow webserver via the ALB. Defaults to open (0.0.0.0/0); override in terraform.tfvars to restrict."
+  type        = list(string)
+  default     = ["0.0.0.0/0"]
+}
+
+variable "control_instance_type" {
+  description = "Instance type for the Airflow control plane (webserver+scheduler+Postgres+Redis). t3.small (2GB) is the realistic minimum; t3.micro fits free tier but will swap heavily."
+  type        = string
+  default     = "t3.small"
+}
+
+variable "dev_instance_type" {
+  description = "Instance type for dev-ec2-instance (Celery worker executing ingestion/dbt, and ad hoc dev box)"
+  type        = string
+  default     = "t3.micro"
+}
+
+variable "idle_cpu_threshold" {
+  description = "Average CPU % below which an EC2 instance is considered idle and auto-stopped by CloudWatch"
+  type        = number
+  default     = 5
+}
+
+variable "idle_evaluation_periods" {
+  description = "Number of 15-minute periods with low CPU before CloudWatch triggers an EC2 stop (e.g. 2 = 30 minutes)"
+  type        = number
+  default     = 2
+}
+
+variable "repo_url" {
+  description = "HTTPS git URL of this repository, cloned onto the instances at boot (must be public or reachable without credentials)"
+  type        = string
+}
+
+variable "repo_branch" {
+  description = "Git branch deployed to the instances"
+  type        = string
+  default     = "master"
+}
+
+variable "airflow_param_path" {
+  description = "SSM parameter path prefix for Airflow runtime secrets/discovery values"
+  type        = string
+  default     = "/dws/airflow"
+}
+
+variable "alert_emails" {
+  description = "Email addresses subscribed to the SNS alert topic (each must confirm the subscription email once)"
+  type        = list(string)
 }

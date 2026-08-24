@@ -8,7 +8,7 @@ on:
 
 env:
   TF_VAR_snowflake_user: ${{ secrets.SNOWFLAKE_USER }}
-  TF_VAR_snowflake_private_key_path: ${{ github.workspace }}/secrets/rsa_key.pem
+  TF_VAR_aws_region: ${{ vars.AWS_REGION || 'ap-south-1' }}
 
 jobs:
   terraform-validate:
@@ -20,12 +20,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Write private and public key files
-        run: |
-          mkdir -p ${{ github.workspace }}/secrets
-          echo "${{ secrets.SNOWFLAKE_PRIVATE_KEY_B64 }}" | base64 -d > ${{ github.workspace }}/secrets/rsa_key.p8
-          openssl pkey -in ${{ github.workspace }}/secrets/rsa_key.p8 -out ${{ github.workspace }}/secrets/rsa_key.pem
-          openssl pkey -in ${{ github.workspace }}/secrets/rsa_key.p8 -pubout -out ${{ github.workspace }}/secrets/rsa_key.pub
+      # Terraform reads the Snowflake key pair from SSM Parameter Store, so the
+      # workflow needs AWS credentials rather than key files on disk.
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ vars.AWS_REGION || 'ap-south-1' }}
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3

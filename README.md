@@ -109,24 +109,21 @@ SNOWFLAKE_PRIVATE_KEY_PATH=/opt/home/secrets/rsa_key.p8
 TRADE_DATA_DIR=data/raw
 ```
 
-**Gmail SMTP setup (for Airflow failure email alerts):**
+**SNS email alerting setup (for Airflow failure alerts):**
 
-1. Go to https://myaccount.google.com/security
-2. Enable **2-Step Verification**
-3. Go to https://myaccount.google.com/apppasswords
-4. Select app: **Mail**, device: **Other** → enter "Airflow" → click **Generate**
-5. Copy the 16-character app password
+Failure alerts publish to an AWS SNS topic (managed in `terraform/sns.tf`) that fans out
+to email subscribers - no SMTP credentials required.
 
-Add SMTP settings to `.env`:
+1. Set your alert address in `terraform/terraform.tfvars`: `alert_emails = ["you@example.com"]`
+2. After `terraform apply`, AWS sends a one-time **"Subscription Confirmation"** email -
+   click the confirm link (alerts are not delivered until confirmed).
+3. For local runs, copy the topic ARN into `.env`:
 
 ```
-AIRFLOW_SMTP_HOST=smtp.gmail.com
-AIRFLOW_SMTP_PORT=587
-AIRFLOW_SMTP_USER=<your_gmail_address>
-AIRFLOW_SMTP_PASSWORD=<16_char_app_password>
-AIRFLOW_SMTP_MAIL_FROM=<your_gmail_address>
-ALERT_EMAIL_TO=<recipient_email_for_alerts>
+SNS_ALERT_TOPIC_ARN=<value of `terraform output sns_alert_topic_arn`>
 ```
+
+On EC2 the topic ARN is fetched from SSM Parameter Store automatically.
 
 ### Step 4: Provision Snowflake infrastructure with Terraform
 

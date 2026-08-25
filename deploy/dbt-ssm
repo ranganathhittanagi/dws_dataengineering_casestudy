@@ -1,0 +1,9 @@
+#!/bin/bash
+set -euo pipefail
+
+if [ -z "${SNOWFLAKE_PRIVATE_KEY:-}" ]; then
+  SNOWFLAKE_PRIVATE_KEY=$(python -c 'from src.config import private_key_pem; print(private_key_pem())')
+  export SNOWFLAKE_PRIVATE_KEY
+fi
+
+exec /opt/home/dbt_venv/bin/dbt "$@"

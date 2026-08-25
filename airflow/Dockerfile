@@ -17,6 +17,8 @@ RUN python -m venv /opt/home/dbt_venv && \
     /opt/home/dbt_venv/bin/pip install --no-cache-dir -r /tmp/dbt-requirements.txt && \
     chown -R airflow:root /opt/home
 
+COPY --chmod=755 deploy/dbt-ssm /usr/local/bin/dbt
+
 # The base Airflow image only allows pip as the airflow user.
 USER airflow
 RUN grep -v -E '^(apache-airflow|dbt-|streamlit)' /tmp/requirements.txt > /tmp/airflow-requirements.txt && \

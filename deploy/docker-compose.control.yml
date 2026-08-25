@@ -32,8 +32,8 @@ x-airflow-common:
     AIRFLOW_HOME: /opt/home/airflow
     PYTHONPATH: /opt/home
     DBT_PROFILES_DIR: /opt/home/dbt
-    DBT_LOG_PATH: /opt/home/dbt/logs
-    DBT_TARGET_PATH: /opt/home/dbt/target
+    DBT_LOG_PATH: /opt/home/dbt_logs
+    DBT_TARGET_PATH: /opt/home/dbt_target
     AIRFLOW_CONN_AWS_DEFAULT: '{"conn_type": "aws", "extra": {"region_name": "${AWS_REGION:-ap-south-1}"}}'
   volumes:
     - ../airflow/dags:/opt/home/airflow/dags

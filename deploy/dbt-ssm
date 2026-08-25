@@ -7,3 +7,4 @@ if [ -z "${SNOWFLAKE_PRIVATE_KEY:-}" ]; then
 fi
 
 exec /opt/home/dbt_venv/bin/dbt "$@"
+both instances

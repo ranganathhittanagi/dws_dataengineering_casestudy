@@ -28,7 +28,8 @@ x-airflow-common:
     AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
     AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
     AIRFLOW__API__AUTH_BACKENDS: 'airflow.api.auth.backend.basic_auth,airflow.api.auth.backend.session'
-    AIRFLOW__WEBSERVER__WORKERS: 2
+    AIRFLOW__WEBSERVER__WORKERS: 1
+    AIRFLOW__SCHEDULER__PARSING_PROCESSES: 1
     AIRFLOW_HOME: /opt/home/airflow
     PYTHONPATH: /opt/home
     DBT_PROFILES_DIR: /opt/home/dbt
@@ -134,7 +135,7 @@ services:
 
   airflow-worker:
     <<: *airflow-common
-    command: airflow celery worker
+    command: airflow celery worker --concurrency 1
     healthcheck:
       test: ["CMD-SHELL", "celery --app airflow.providers.celery.executors.celery_executor.app inspect ping -d celery@$${HOSTNAME} || celery --app airflow.executors.celery_executor.app inspect ping -d celery@$${HOSTNAME}"]
       interval: 60s

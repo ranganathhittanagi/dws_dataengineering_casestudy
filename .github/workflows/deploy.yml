@@ -38,7 +38,18 @@ jobs:
             --query 'Reservations[].Instances[].InstanceId' \
             --output text)
           test -n "$INSTANCE_IDS"
-          aws ec2 start-instances --instance-ids $INSTANCE_IDS >/dev/null
+          STOPPING_IDS=$(aws ec2 describe-instances --instance-ids $INSTANCE_IDS \
+            --filters "Name=instance-state-name,Values=stopping" \
+            --query 'Reservations[].Instances[].InstanceId' --output text)
+          if [ -n "$STOPPING_IDS" ]; then
+            aws ec2 wait instance-stopped --instance-ids $STOPPING_IDS
+          fi
+          STOPPED_IDS=$(aws ec2 describe-instances --instance-ids $INSTANCE_IDS \
+            --filters "Name=instance-state-name,Values=stopped" \
+            --query 'Reservations[].Instances[].InstanceId' --output text)
+          if [ -n "$STOPPED_IDS" ]; then
+            aws ec2 start-instances --instance-ids $STOPPED_IDS >/dev/null
+          fi
           aws ec2 wait instance-running --instance-ids $INSTANCE_IDS
           echo "INSTANCE_IDS=$INSTANCE_IDS" >> "$GITHUB_ENV"
 
@@ -95,8 +106,33 @@ jobs:
       - name: Deploy dev instance
         run: |
           INSTANCE_ID=$(aws ec2 describe-instances \
-            --filters "Name=tag:Role,Values=dev-ec2-instance" "Name=instance-state-name,Values=running" \
+            --filters "Name=tag:Role,Values=dev-ec2-instance" "Name=instance-state-name,Values=pending,running,stopping,stopped" \
             --query 'Reservations[0].Instances[0].InstanceId' --output text)
+          if [[ ! "$INSTANCE_ID" =~ ^i-[a-z0-9]{8,17}$ ]]; then
+            echo "No dev-ec2-instance found; got: $INSTANCE_ID"
+            exit 1
+          fi
+          STATE=$(aws ec2 describe-instances --instance-ids "$INSTANCE_ID" \
+            --query 'Reservations[0].Instances[0].State.Name' --output text)
+          if [ "$STATE" = "stopping" ]; then
+            aws ec2 wait instance-stopped --instance-ids "$INSTANCE_ID"
+            STATE=stopped
+          fi
+          if [ "$STATE" = "stopped" ]; then
+            aws ec2 start-instances --instance-ids "$INSTANCE_ID" >/dev/null
+          fi
+          aws ec2 wait instance-running --instance-ids "$INSTANCE_ID"
+          for i in $(seq 1 30); do
+            SSM_STATUS=$(aws ssm describe-instance-information \
+              --filters "Key=InstanceIds,Values=$INSTANCE_ID" \
+              --query 'InstanceInformationList[0].PingStatus' --output text)
+            [ "$SSM_STATUS" = "Online" ] && break
+            if [ "$i" -eq 30 ]; then
+              echo "SSM did not become ready for $INSTANCE_ID"
+              exit 1
+            fi
+            sleep 10
+          done
           CMD_ID=$(aws ssm send-command \
             --instance-ids "$INSTANCE_ID" \
             --document-name AWS-RunShellScript \

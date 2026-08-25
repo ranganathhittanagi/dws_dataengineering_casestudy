@@ -19,7 +19,7 @@ services:
     build:
       context: ..
       dockerfile: airflow/Dockerfile
-    command: sleep infinity
+    command: ["bash", "-c", "exec sleep infinity"]
     env_file:
       - runtime.env
     environment:

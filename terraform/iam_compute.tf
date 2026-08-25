@@ -66,7 +66,7 @@ data "aws_iam_policy_document" "instance_baseline" {
 
 # dev-ec2-instance additionally reads trade files from S3 (same least-privilege scope
 # previously attached to the dws-pipeline-service IAM user).
-data "aws_iam_policy_document" "dev_s3_read" {
+data "aws_iam_policy_document" "control_s3_read" {
   statement {
     sid       = "ReadTradeObjects"
     effect    = "Allow"
@@ -83,8 +83,40 @@ data "aws_iam_policy_document" "dev_s3_read" {
     condition {
       test     = "StringLike"
       variable = "s3:prefix"
-      values   = ["${trimsuffix(var.s3_source_prefix, "/")}/*"]
+      values = [
+        trimsuffix(var.s3_source_prefix, "/"),
+        "${trimsuffix(var.s3_source_prefix, "/")}/*",
+      ]
     }
+  }
+}
+
+data "aws_iam_policy_document" "dev_s3_read_write" {
+  statement {
+    sid    = "ListAllBuckets"
+    effect = "Allow"
+    actions = [
+      "s3:GetBucketLocation",
+      "s3:ListAllMyBuckets",
+      "s3:ListBucket",
+      "s3:ListBucketMultipartUploads",
+    ]
+    resources = ["arn:aws:s3:::*"]
+  }
+
+  statement {
+    sid    = "ReadWriteAllBucketObjects"
+    effect = "Allow"
+    actions = [
+      "s3:AbortMultipartUpload",
+      "s3:GetObject",
+      "s3:GetObjectAttributes",
+      "s3:GetObjectVersion",
+      "s3:ListMultipartUploadParts",
+      "s3:PutObject",
+      "s3:PutObjectTagging",
+    ]
+    resources = ["arn:aws:s3:::*/*"]
   }
 }
 
@@ -110,7 +142,7 @@ resource "aws_iam_role_policy" "control_baseline" {
 resource "aws_iam_role_policy" "control_s3_read" {
   name   = "${var.project_name}-control-s3-read"
   role   = aws_iam_role.airflow_control.id
-  policy = data.aws_iam_policy_document.dev_s3_read.json
+  policy = data.aws_iam_policy_document.control_s3_read.json
 }
 
 resource "aws_iam_instance_profile" "airflow_control" {
@@ -138,9 +170,9 @@ resource "aws_iam_role_policy" "dev_baseline" {
 }
 
 resource "aws_iam_role_policy" "dev_s3_read" {
-  name   = "${var.project_name}-dev-s3-read"
+  name   = "${var.project_name}-dev-s3-read-write"
   role   = aws_iam_role.dev_ec2.id
-  policy = data.aws_iam_policy_document.dev_s3_read.json
+  policy = data.aws_iam_policy_document.dev_s3_read_write.json
 }
 
 resource "aws_iam_instance_profile" "dev_ec2" {

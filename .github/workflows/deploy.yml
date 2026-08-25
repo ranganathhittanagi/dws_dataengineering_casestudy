@@ -2,8 +2,8 @@ name: Deploy to EC2
 
 # Deploys the latest master to both Airflow EC2 instances via SSM Run Command
 # (no SSH, no inbound ports): git pull + docker compose up on each node.
-# Both nodes deploy from the same trigger, keeping DAG/dbt code identical across the
-# scheduler and Celery workers (a CeleryExecutor requirement).
+# The control node runs the complete Airflow stack; the dev node receives the same
+# repository revision for ad hoc development and dbt work.
 
 on:
   push:

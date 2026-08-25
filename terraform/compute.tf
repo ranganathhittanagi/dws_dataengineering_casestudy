@@ -4,11 +4,9 @@
 # self-healing via a CloudWatch aws:recover alarm (same instance + EBS restored on
 # hardware failure) and daily EBS snapshots via DLM.
 #
-# dev-ec2-instance is the second box: it runs the Celery worker that actually executes
-# ingestion/dbt tasks dispatched by Airflow, AND doubles as the interactive box you SSM
-# into to run ad hoc commands (git pull, dbt, aws cli) the same way you would locally. It
-# is a stable singleton (not an ASG) precisely so its instance ID never changes under you
-# - it gets the same aws:recover self-healing as the control instance instead.
+# dev-ec2-instance is the second box: an SSH/SSM-accessible environment for ad hoc
+# commands (git pull, dbt, aws cli) and development. Airflow task execution stays on the
+# control instance so the dev box can be stopped independently when it is not needed.
 
 data "aws_ami" "al2023" {
   most_recent = true
@@ -182,7 +180,12 @@ resource "aws_dlm_lifecycle_policy" "control_data_backup" {
   }
 }
 
-# --- dev-ec2-instance (Celery worker + interactive dev box, stable singleton) ---
+# --- dev-ec2-instance (SSH/SSM-accessible development box) ---
+
+resource "aws_key_pair" "dev_ec2" {
+  key_name   = "${var.project_name}-dev"
+  public_key = file(pathexpand(var.dev_ssh_public_key_path))
+}
 
 resource "aws_instance" "dev_ec2" {
   ami                    = data.aws_ami.al2023.id
@@ -190,6 +193,7 @@ resource "aws_instance" "dev_ec2" {
   subnet_id              = aws_subnet.public[1].id
   vpc_security_group_ids = [aws_security_group.dev_ec2.id]
   iam_instance_profile   = aws_iam_instance_profile.dev_ec2.name
+  key_name               = aws_key_pair.dev_ec2.key_name
   user_data              = local.dev_user_data
 
   root_block_device {
@@ -236,32 +240,9 @@ resource "aws_cloudwatch_metric_alarm" "dev_ec2_recover" {
   ]
 }
 
-# --- Idle auto-stop alarms ---
-# Stop both instances when CPU stays below the threshold for 30 consecutive minutes
-# to keep the AWS bill low. They must be started manually when you want to use Airflow again.
-
-resource "aws_cloudwatch_metric_alarm" "control_idle" {
-  alarm_name          = "${var.project_name}-control-idle-stop"
-  alarm_description   = "Stop the Airflow control instance after 30 minutes of low CPU"
-  namespace           = "AWS/EC2"
-  metric_name         = "CPUUtilization"
-  statistic           = "Average"
-  comparison_operator = "LessThanThreshold"
-  threshold           = var.idle_cpu_threshold
-  period              = 900
-  evaluation_periods  = var.idle_evaluation_periods
-
-  dimensions = {
-    InstanceId = aws_instance.airflow_control.id
-  }
-
-  alarm_actions = [
-    "arn:aws:automate:${var.aws_region}:ec2:stop",
-    aws_sns_topic.pipeline_alerts.arn,
-  ]
-
-  ok_actions = [aws_sns_topic.pipeline_alerts.arn]
-}
+# --- Idle auto-stop alarm ---
+# Only the development instance stops after 30 minutes of low CPU. The control instance
+# stays online so the scheduler and colocated worker can run DAGs continuously.
 
 resource "aws_cloudwatch_metric_alarm" "dev_idle" {
   alarm_name          = "${var.project_name}-dev-idle-stop"

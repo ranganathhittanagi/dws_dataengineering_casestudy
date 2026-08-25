@@ -119,8 +119,16 @@ resource "aws_security_group" "airflow_control" {
 
 resource "aws_security_group" "dev_ec2" {
   name        = "${var.project_name}-dev-sg"
-  description = "dev-ec2-instance (Celery worker + ad hoc dev box): no inbound; outbound to control plane and internet"
+  description = "dev-ec2-instance: SSH from the configured admin CIDR and unrestricted outbound"
   vpc_id      = aws_vpc.pipeline.id
+
+  ingress {
+    description = "SSH from admin CIDR"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = [var.dev_ssh_cidr]
+  }
 
   egress {
     description = "Outbound (control plane, AWS APIs, Snowflake, package installs)"

@@ -1,7 +1,7 @@
 #!/bin/bash
 # EC2 bootstrap for the ${role} node (rendered by Terraform templatefile()).
-# role = "control" (Airflow webserver/scheduler/Postgres/Redis) or
-# role = "dev" (dev-ec2-instance: Celery worker + ad hoc dev box).
+# role = "control" (complete Airflow stack, Postgres, and Redis) or
+# role = "dev" (SSH/SSM-accessible ad hoc development box).
 # Idempotent: safe to re-run. Installs Docker + Compose, prepares storage (control only),
 # clones the repo, fetches runtime secrets from SSM, and starts the Compose stack.
 set -euxo pipefail

@@ -107,6 +107,12 @@ resource "aws_iam_role_policy" "control_baseline" {
   policy = data.aws_iam_policy_document.instance_baseline.json
 }
 
+resource "aws_iam_role_policy" "control_s3_read" {
+  name   = "${var.project_name}-control-s3-read"
+  role   = aws_iam_role.airflow_control.id
+  policy = data.aws_iam_policy_document.dev_s3_read.json
+}
+
 resource "aws_iam_instance_profile" "airflow_control" {
   name = "${var.project_name}-control-profile"
   role = aws_iam_role.airflow_control.name
@@ -178,10 +184,7 @@ data "aws_iam_policy_document" "ec2_actions" {
       "ec2:StopInstances",
       "ec2:DescribeInstances",
     ]
-    resources = [
-      aws_instance.airflow_control.arn,
-      aws_instance.dev_ec2.arn,
-    ]
+    resources = [aws_instance.dev_ec2.arn]
   }
 }
 

@@ -14,7 +14,8 @@ COPY requirements.txt /tmp/requirements.txt
 # The version is sourced from the single root requirements.txt (one source of truth).
 RUN python -m venv /opt/home/dbt_venv && \
     grep '^dbt-' /tmp/requirements.txt > /tmp/dbt-requirements.txt && \
-    /opt/home/dbt_venv/bin/pip install --no-cache-dir -r /tmp/dbt-requirements.txt
+    /opt/home/dbt_venv/bin/pip install --no-cache-dir -r /tmp/dbt-requirements.txt && \
+    chown -R airflow:root /opt/home
 
 # The base Airflow image only allows pip as the airflow user.
 USER airflow

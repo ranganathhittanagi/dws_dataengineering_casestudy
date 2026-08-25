@@ -165,9 +165,21 @@ variable "control_instance_type" {
 }
 
 variable "dev_instance_type" {
-  description = "Instance type for dev-ec2-instance (Celery worker executing ingestion/dbt, and ad hoc dev box)"
+  description = "Instance type for dev-ec2-instance (SSH-accessible ad hoc development box)"
   type        = string
   default     = "t3.micro"
+}
+
+variable "dev_ssh_public_key_path" {
+  description = "Local path to the SSH public key registered for dev-ec2-instance"
+  type        = string
+  default     = "~/.ssh/dws-dev-ec2.pub"
+}
+
+variable "dev_ssh_cidr" {
+  description = "CIDR allowed to SSH to dev-ec2-instance"
+  type        = string
+  default     = "106.51.217.210/32"
 }
 
 variable "idle_cpu_threshold" {

@@ -106,11 +106,16 @@ output "control_instance_id" {
 }
 
 output "control_private_ip" {
-  description = "Private IP workers use to reach Postgres/Redis on the control plane"
+  description = "Private IP of the complete Airflow control and worker instance"
   value       = aws_instance.airflow_control.private_ip
 }
 
 output "dev_instance_id" {
-  description = "dev-ec2-instance (Celery worker + ad hoc dev box; connect with: aws ssm start-session --target <id>)"
+  description = "SSH/SSM-accessible dev-ec2-instance"
   value       = aws_instance.dev_ec2.id
+}
+
+output "dev_public_ip" {
+  description = "Public IP for SSH access to dev-ec2-instance"
+  value       = aws_instance.dev_ec2.public_ip
 }

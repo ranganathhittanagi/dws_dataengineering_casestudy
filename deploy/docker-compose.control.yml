@@ -1,6 +1,5 @@
 # Airflow control plane (EC2 "airflow-control"): metadata Postgres, Redis broker,
-# webserver, scheduler, triggerer. Task execution happens on the worker instance via
-# CeleryExecutor. Run from the repo root:
+# webserver, scheduler, triggerer, and Celery worker. Run from the repo root:
 #   docker compose -f deploy/docker-compose.control.yml up -d --build
 #
 # Secrets (Fernet key, DB/Redis passwords, connection strings) come from
@@ -128,6 +127,20 @@ services:
   airflow-triggerer:
     <<: *airflow-common
     command: airflow triggerer
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+    restart: always
+
+  airflow-worker:
+    <<: *airflow-common
+    command: airflow celery worker
+    healthcheck:
+      test: ["CMD-SHELL", "celery --app airflow.providers.celery.executors.celery_executor.app inspect ping -d celery@$${HOSTNAME} || celery --app airflow.executors.celery_executor.app inspect ping -d celery@$${HOSTNAME}"]
+      interval: 60s
+      timeout: 30s
+      retries: 5
+      start_period: 120s
     depends_on:
       airflow-init:
         condition: service_completed_successfully

@@ -15,6 +15,9 @@ AIRFLOW_PARAM_PATH="${airflow_param_path}"
 ROLE="${role}"
 APP_DIR=/opt/app
 
+# Allow root (bootstrap, SSM deploy) to operate on a repo whose owner is the container user.
+git config --global --add safe.directory "$APP_DIR"
+
 # --- Base packages ---
 dnf install -y docker git
 systemctl enable --now docker

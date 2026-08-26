@@ -86,11 +86,18 @@ with DAG(
         execution_timeout=timedelta(minutes=15),
     )
 
+    load_dq_rule_catalog = PythonOperator(
+        task_id="load_dq_rule_catalog",
+        python_callable=run_dbt,
+        op_kwargs={"subcommand": "seed", "selector": "dq_rule_catalog"},
+        trigger_rule="all_done",
+        execution_timeout=timedelta(minutes=15),
+    )
+
     post_publish_audit = PythonOperator(
         task_id="post_publish_audit",
         python_callable=run_dbt,
         op_kwargs={"subcommand": "run", "selector": "tag:post_publish_audit"},
-        trigger_rule="all_done",
         execution_timeout=timedelta(minutes=15),
     )
 
@@ -117,6 +124,7 @@ with DAG(
         input_transform_dataset_sensor
         >> trades_warehouse
         >> trades_warehouse_dq_check
+        >> load_dq_rule_catalog
         >> post_publish_audit
         >> post_publish_dq_check
         >> send_quality_notification

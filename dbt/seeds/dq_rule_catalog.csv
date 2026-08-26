@@ -1,0 +1,15 @@
+RULE_ID,MODEL,COLUMN,DIMENSION,DESCRIPTION,OWNER,SEVERITY,THRESHOLD,ACTIVE,REMEDIATION
+RULE_RAW_001,trades,TRADE_ID,completeness,Trade ID must be present after raw load,data-engineering,error,0,true,Investigate source file for missing TRADE_ID values
+RULE_RAW_002,trades,SOURCE_FILE,completeness,Source filename lineage must be captured,data-engineering,error,0,true,Verify COPY INTO preserves METADATA$FILENAME
+RULE_TRN_001,stg_trades,TRADE_ID,validity,TRADE_ID must be a non-empty string after trim,data-engineering,error,0,true,Reject blank or whitespace-only trade IDs
+RULE_TRN_002,stg_trades,VERSION,validity,VERSION must parse as a non-negative integer,data-engineering,error,0,true,Reject malformed version values
+RULE_TRN_003,stg_trades,NOTIONAL,validity,NOTIONAL must parse as a positive number,data-engineering,error,0,true,Reject zero or unparseable notionals
+RULE_TRN_004,stg_trades,CURRENCY,validity,CURRENCY must be in the approved ISO domain,data-engineering,error,0,true,Reject unsupported currency codes
+RULE_TRN_005,stg_trades,MATURITY_DATE,validity,MATURITY_DATE must parse as a valid date,data-engineering,error,0,true,Reject unparseable maturity dates
+RULE_TRN_006,stg_trades,EXECUTION_DATE,validity,EXECUTION_DATE must parse as a valid date,data-engineering,error,0,true,Reject unparseable execution dates
+RULE_TRN_007,stg_trades,MATURITY_DATE,consistency,MATURITY_DATE must be on or after EXECUTION_DATE,data-engineering,error,0,true,Reject trades with maturity before execution
+RULE_WH_001,candidate_valid_trades,TRADE_ID,uniqueness,One current row per TRADE_ID in the warehouse candidate,data-engineering,error,0,true,Deduplicate to a single latest version
+RULE_WH_002,candidate_valid_trades,VERSION,consistency,VERSION must not be lower than the currently published version,data-engineering,error,0,true,Reject stale version updates
+RULE_WH_003,candidate_valid_trades,CURRENCY,validity,CURRENCY must belong to the accepted domain,data-engineering,error,0,true,Reject unsupported currency values
+RULE_WH_004,candidate_valid_trades,MATURITY_DATE,completeness,Published MATURITY_DATE must not be null,data-engineering,error,0,true,Reject candidate with null maturity
+RULE_RCN_001,reconciliation,row_count,reconciliation,Source rows must equal loaded plus rejected rows,data-engineering,error,0,true,Investigate unaccounted source rows

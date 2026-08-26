@@ -2,27 +2,61 @@ version: 2
 
 models:
   - name: stg_trades
-    description: "Cleaned and typed trades from the raw layer. Trims whitespace, casts to proper types, applies coalesce defaults."
+    description: "Parsed trades with raw values and explicit validity flags. Invalid values are kept as null/empty rather than silently replaced with defaults so the quarantine layer can record the exact failure."
     columns:
+      - name: RAW_TRADE_ID
+        description: "Original TRADE_ID as loaded from the source file"
+      - name: RAW_VERSION
+        description: "Original VERSION as loaded from the source file"
+      - name: RAW_COUNTERPARTY
+        description: "Original COUNTERPARTY as loaded from the source file"
+      - name: RAW_NOTIONAL
+        description: "Original NOTIONAL as loaded from the source file"
+      - name: RAW_CURRENCY
+        description: "Original CURRENCY as loaded from the source file"
+      - name: RAW_MATURITY_DATE
+        description: "Original MATURITY_DATE as loaded from the source file"
+      - name: RAW_EXECUTION_DATE
+        description: "Original EXECUTION_DATE as loaded from the source file"
       - name: TRADE_ID
-        description: "Unique trade identifier"
-        tests:
-          - not_null
+        description: "Trimmed trade identifier; null when empty"
       - name: VERSION
-        description: "Trade version number"
-        tests:
-          - not_null
+        description: "Parsed version number; null when unparseable or negative"
       - name: COUNTERPARTY
-        description: "Counterparty name, defaults to UNKNOWN"
+        description: "Trimmed counterparty; null when empty"
       - name: NOTIONAL
-        description: "Notional amount, defaults to 0.00"
+        description: "Parsed notional; null when unparseable or not positive"
       - name: CURRENCY
-        description: "ISO currency code, defaults to USD"
+        description: "Trimmed currency; null when empty"
       - name: MATURITY_DATE
-        description: "Maturity date (NULL if unparseable from raw)"
+        description: "Parsed maturity date; null when unparseable"
       - name: EXECUTION_DATE
-        description: "Execution date, defaults to today if unparseable"
+        description: "Parsed execution date; null when unparseable"
+      - name: IS_TRADE_ID_VALID
+        description: "True when TRADE_ID is non-empty"
+      - name: IS_VERSION_VALID
+        description: "True when VERSION parses to a non-negative integer"
+      - name: IS_NOTIONAL_VALID
+        description: "True when NOTIONAL parses to a positive number"
+      - name: IS_CURRENCY_VALID
+        description: "True when CURRENCY is in the approved domain"
+      - name: IS_MATURITY_VALID
+        description: "True when MATURITY_DATE parses"
+      - name: IS_EXECUTION_VALID
+        description: "True when EXECUTION_DATE parses"
+      - name: IS_DATE_ORDER_VALID
+        description: "True when MATURITY_DATE >= EXECUTION_DATE (and both parse)"
+      - name: IS_VALID
+        description: "True when all per-field validity flags are true"
+      - name: SOURCE_FILENAME
+        description: "Source filename from the raw layer"
+      - name: SOURCE_ROW_NUMBER
+        description: "Source row number from the raw layer"
       - name: ETL_DATE
         description: "The etl_date batch this row was processed for"
+      - name: DBT_INVOCATION_ID
+        description: "dbt invocation/run identifier for lineage"
+      - name: LOAD_TIMESTAMP
+        description: "When the source row was loaded"
       - name: LAST_UPDATED_DATE
-        description: "Timestamp of last transformation"
+        description: "When this row was last transformed"

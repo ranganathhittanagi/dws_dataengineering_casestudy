@@ -54,6 +54,11 @@ resource "snowflake_schema" "compliance" {
   database = snowflake_database.compliance.name
 }
 
+resource "snowflake_schema" "dq_observability" {
+  name     = "DQ_OBSERVABILITY"
+  database = snowflake_database.compliance.name
+}
+
 resource "snowflake_account_role" "service_role" {
   name = var.service_role_name
 }
@@ -107,6 +112,7 @@ resource "snowflake_grant_privileges_to_account_role" "schema_all" {
     "${var.transform_database_name}.${var.transform_schema_name}",
     "${var.datawarehouse_database_name}.${var.datawarehouse_schema_name}",
     "${var.compliance_database_name}.${var.compliance_schema_name}",
+    "${var.compliance_database_name}.DQ_OBSERVABILITY",
   ])
   all_privileges    = true
   account_role_name = snowflake_account_role.service_role.name

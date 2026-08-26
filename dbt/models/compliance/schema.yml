@@ -2,29 +2,41 @@ version: 2
 
 models:
   - name: rejected_trades
-    description: "Trades that fail validation rules, with a REJECTION_REASON explaining why."
+    description: "One row per record per failed quality rule. A single source record can produce multiple quarantine rows, each with a rule ID, rule name, human-readable reason, raw values, and full lineage."
     columns:
-      - name: TRADE_ID
-        description: "Unique trade identifier"
+      - name: RULE_ID
+        description: "Rule identifier from the rule catalog"
         tests:
           - not_null
-      - name: VERSION
-        description: "Trade version number"
-      - name: COUNTERPARTY
-        description: "Counterparty name"
-      - name: NOTIONAL
-        description: "Notional amount"
-      - name: CURRENCY
-        description: "ISO currency code"
-      - name: MATURITY_DATE
-        description: "Maturity date (may be NULL if unparseable)"
-      - name: EXECUTION_DATE
-        description: "Execution date"
+      - name: RULE_NAME
+        description: "Short rule name"
       - name: REJECTION_REASON
-        description: "Reason the trade was rejected: INVALID_MATURITY_DATE, MATURITY_BEFORE_EXECUTION, or STALE_VERSION"
+        description: "Human-readable failure message"
         tests:
           - not_null
+      - name: TRADE_ID
+        description: "Trade identifier (may be null if the rule is a missing trade ID)"
+      - name: VERSION
+        description: "Parsed version number (may be null if unparseable)"
+      - name: RAW_VERSION
+        description: "Original version as loaded"
+      - name: RAW_COUNTERPARTY
+        description: "Original counterparty as loaded"
+      - name: RAW_NOTIONAL
+        description: "Original notional as loaded"
+      - name: RAW_CURRENCY
+        description: "Original currency as loaded"
+      - name: RAW_MATURITY_DATE
+        description: "Original maturity date as loaded"
+      - name: RAW_EXECUTION_DATE
+        description: "Original execution date as loaded"
       - name: ETL_DATE
         description: "The etl_date batch this row was processed for"
+      - name: SOURCE_FILENAME
+        description: "Source filename from the raw layer"
+      - name: SOURCE_ROW_NUMBER
+        description: "Source row number from the raw layer"
+      - name: DBT_INVOCATION_ID
+        description: "dbt invocation/run identifier for lineage"
       - name: LAST_UPDATED_DATE
-        description: "Timestamp of last update"
+        description: "Timestamp of last quarantine write"

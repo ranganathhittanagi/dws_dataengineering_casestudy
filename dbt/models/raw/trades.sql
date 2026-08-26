@@ -5,7 +5,8 @@
     materialized='copy_into_table',
     stage='@RAW_DB.RAW_SCHEMA.RAW_DATA_STAGE',
     file_format='RAW_DB.RAW_SCHEMA.CSV_FORMAT',
-    copy_options="ON_ERROR = 'CONTINUE' FORCE = FALSE PURGE = FALSE PATTERN = '.*trades_(" ~ late_arrival_date ~ "|" ~ etl_date ~ ").*'"
+    copy_options="ON_ERROR = 'CONTINUE' FORCE = FALSE PURGE = FALSE PATTERN = '.*trades_(" ~ late_arrival_date ~ "|" ~ etl_date ~ ").*'",
+    tags=['ingest']
 ) }}
 
 select
@@ -16,5 +17,9 @@ select
     $5::VARCHAR  as CURRENCY,
     $6::VARCHAR  as MATURITY_DATE,
     $7::VARCHAR  as EXECUTION_DATE,
-    TRY_TO_DATE(REGEXP_SUBSTR(METADATA$FILENAME, 'trades_(\\d{4}-\\d{2}-\\d{2})', 1, 1, 'e')) as ETL_DATE
+    METADATA$FILENAME::VARCHAR as SOURCE_FILENAME,
+    METADATA$FILE_ROW_NUMBER::VARCHAR as SOURCE_ROW_NUMBER,
+    '{{ etl_date }}'::VARCHAR as ETL_DATE,
+    '{{ invocation_id }}'::VARCHAR as DBT_INVOCATION_ID,
+    CURRENT_TIMESTAMP()::VARCHAR as LOAD_TIMESTAMP
 from @RAW_DB.RAW_SCHEMA.RAW_DATA_STAGE

@@ -1,8 +1,8 @@
 version: 2
 
 models:
-  - name: valid_trades
-    description: "Merged store of accepted trades, one row per TRADE_ID (latest version), incrementally merged. Rejects trades with a null/earlier-than-execution maturity date or a version lower than what's already stored. TRADE_STATUS is recomputed every run for all rows so trades transition to EXPIRED once their maturity date passes."
+  - name: candidate_valid_trades
+    description: "Pre-publication candidate rows that pass all deterministic business rules. This model is fully tested before the VALID_TRADES table is updated."
     columns:
       - name: TRADE_ID
         description: "Unique trade identifier"
@@ -27,11 +27,46 @@ models:
       - name: EXECUTION_DATE
         description: "Execution date"
       - name: TRADE_STATUS
-        description: "ACTIVE or EXPIRED (EXPIRED once MATURITY_DATE has passed)"
+        description: "ACTIVE or EXPIRED"
         tests:
           - accepted_values:
               values: ['ACTIVE', 'EXPIRED']
       - name: ETL_DATE
-        description: "The etl_date batch this row was last accepted/updated for"
+        description: "The etl_date batch this row was accepted for"
+      - name: LAST_UPDATED_DATE
+        description: "Timestamp of last update"
+
+  - name: valid_trades
+    description: "Published accepted trades, one row per TRADE_ID, incrementally merged only from tested candidates."
+    columns:
+      - name: TRADE_ID
+        description: "Unique trade identifier"
+        tests:
+          - not_null
+          - unique
+      - name: VERSION
+        description: "Latest accepted trade version number"
+      - name: COUNTERPARTY
+        description: "Counterparty name"
+      - name: NOTIONAL
+        description: "Notional amount"
+      - name: CURRENCY
+        description: "ISO currency code"
+        tests:
+          - accepted_values:
+              values: ['USD', 'EUR', 'GBP', 'JPY', 'AUD', 'CAD', 'CHF']
+      - name: MATURITY_DATE
+        description: "Maturity date"
+        tests:
+          - not_null
+      - name: EXECUTION_DATE
+        description: "Execution date"
+      - name: TRADE_STATUS
+        description: "ACTIVE or EXPIRED"
+        tests:
+          - accepted_values:
+              values: ['ACTIVE', 'EXPIRED']
+      - name: ETL_DATE
+        description: "The etl_date batch this row was last published for"
       - name: LAST_UPDATED_DATE
         description: "Timestamp of last update"

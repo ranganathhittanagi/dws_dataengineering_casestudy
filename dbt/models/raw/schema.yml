@@ -2,7 +2,7 @@ version: 2
 
 models:
   - name: trades
-    description: "Bronze layer - raw trades COPY-INTO'd from the CSV stage. All fields stored as VARCHAR so no row is lost to a type-cast failure."
+    description: "Bronze layer - raw trades COPY-INTO'd from the CSV stage. All columns stored as VARCHAR so no row is lost to type-cast failure. Lineage fields (filename, source row number, batch id, invocation id, load timestamp) are preserved for traceability."
     columns:
       - name: TRADE_ID
         description: "Trade identifier (string)"
@@ -18,5 +18,19 @@ models:
         description: "Maturity date (string)"
       - name: EXECUTION_DATE
         description: "Execution date (string)"
+      - name: SOURCE_FILENAME
+        description: "Full source file path from the stage"
+        tests:
+          - not_null
+      - name: SOURCE_ROW_NUMBER
+        description: "Row number within the source file"
       - name: ETL_DATE
         description: "The etl_date batch this row was loaded for"
+        tests:
+          - not_null
+      - name: DBT_INVOCATION_ID
+        description: "dbt invocation/run identifier for lineage"
+      - name: LOAD_TIMESTAMP
+        description: "When the row was loaded into Snowflake"
+        tests:
+          - not_null

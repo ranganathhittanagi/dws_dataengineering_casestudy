@@ -1,0 +1,56 @@
+version: 2
+
+models:
+  - name: batch_control_totals
+    description: "Control totals for each batch across raw, transform, quarantine, candidate, and published stages."
+    columns:
+      - name: stage
+        description: "Pipeline stage"
+      - name: model
+        description: "Model that the count came from"
+      - name: etl_date
+        description: "Batch date for the control total"
+      - name: row_count
+        description: "Number of rows in that stage/model for the batch"
+      - name: recorded_at
+        description: "When the control total was recorded"
+
+  - name: reconciliation
+    description: "Batch-level reconciliation between source rows, candidates, distinct quarantined source records, published rows, and unaccounted rows."
+    columns:
+      - name: etl_date
+        description: "Batch date"
+      - name: source_rows
+        description: "Rows in the raw layer for the batch"
+      - name: candidate_valid_rows
+        description: "Rows in the warehouse candidate for the batch"
+      - name: quarantined_distinct_records
+        description: "Distinct source records that produced at least one quarantine row"
+      - name: published_rows
+        description: "Rows in the published VALID_TRADES for the batch"
+      - name: unaccounted_rows
+        description: "Difference not explained by candidates or quarantine"
+      - name: recorded_at
+        description: "When the reconciliation was recorded"
+
+  - name: quality_scorecard
+    description: "Batch-level quality score by rule, dimension, and severity."
+    columns:
+      - name: etl_date
+        description: "Batch date"
+      - name: RULE_ID
+        description: "Rule identifier"
+      - name: RULE_NAME
+        description: "Rule name"
+      - name: DIMENSION
+        description: "Quality dimension"
+      - name: SEVERITY
+        description: "Rule severity"
+      - name: failure_count
+        description: "Number of failed records for this rule in the batch"
+      - name: total_rows
+        description: "Total raw rows in the batch"
+      - name: score
+        description: "Quality score (0-100) for the rule"
+      - name: recorded_at
+        description: "When the scorecard was recorded"

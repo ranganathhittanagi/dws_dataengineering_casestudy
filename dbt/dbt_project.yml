@@ -11,9 +11,21 @@ analysis-paths: ["analyses"]
 macro-paths: ["macros"]
 snapshot-paths: ["snapshots"]
 
+packages-install-path: dbt_packages
+
 clean-targets:
   - "target"
   - "dbt_packages"
+
+vars:
+  dq_observability_schema: "DQ_OBSERVABILITY"
+
+flags:
+  require_explicit_package_overrides_for_builtin_materializations: false
+  source_freshness_run_project_hooks: true
+
+on-run-end:
+  - '{{ elementary.upload_dbt_artifacts(results) }}'
 
 models:
   trade_data:
@@ -26,10 +38,12 @@ models:
       +materialized: copy_into_table
       +database: RAW_DB
       +schema: RAW_SCHEMA
+      +tags: ["ingest"]
     transform:
       +materialized: incremental
       +database: TRANSFORM_DB
       +schema: TRANSFORM_SCHEMA
+      +tags: ["prepare_quality"]
     datawarehouse:
       +materialized: incremental
       +database: DATAWAREHOUSE_DB
@@ -38,3 +52,17 @@ models:
       +materialized: incremental
       +database: COMPLIANCE_DB
       +schema: COMPLIANCE_SCHEMA
+      +tags: ["prepare_quality"]
+    quality:
+      +materialized: incremental
+      +database: COMPLIANCE_DB
+      +schema: DQ_OBSERVABILITY
+      +tags: ["post_publish_audit"]
+  elementary:
+    +database: COMPLIANCE_DB
+    +schema: DQ_OBSERVABILITY
+
+seeds:
+  trade_data:
+    +database: COMPLIANCE_DB
+    +schema: COMPLIANCE_SCHEMA

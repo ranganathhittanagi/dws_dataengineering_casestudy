@@ -19,7 +19,7 @@ existing_valid as (
     select
         TRADE_ID,
         MAX(VERSION) as MAX_VERSION
-    from {{ ref('valid_trades') }}
+    from {{ source('datawarehouse', 'valid_trades') }}
     group by TRADE_ID
 
 ),

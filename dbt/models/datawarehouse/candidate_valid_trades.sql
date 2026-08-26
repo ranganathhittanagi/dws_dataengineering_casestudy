@@ -19,7 +19,7 @@ existing_trades as (
     select
         TRADE_ID,
         VERSION as CURRENT_VERSION
-    from {{ ref('valid_trades') }}
+    from {{ source('datawarehouse', 'valid_trades') }}
 
 ),
 

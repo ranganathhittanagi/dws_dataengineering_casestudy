@@ -53,7 +53,7 @@ with control_totals as (
         'valid_trades' as model,
         '{{ etl_date }}'::VARCHAR as etl_date,
         count(*) as row_count
-    from {{ ref('valid_trades') }}
+    from {{ source('datawarehouse', 'valid_trades') }}
     where ETL_DATE between '{{ late_arrival_date }}' and '{{ etl_date }}'
 
 )

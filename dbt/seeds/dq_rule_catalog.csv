@@ -1,4 +1,4 @@
-RULE_ID,MODEL,COLUMN,DIMENSION,DESCRIPTION,OWNER,SEVERITY,THRESHOLD,ACTIVE,REMEDIATION
+RULE_ID,MODEL,COLUMN_NAME,DIMENSION,DESCRIPTION,OWNER,SEVERITY,THRESHOLD,ACTIVE,REMEDIATION
 RULE_RAW_001,trades,TRADE_ID,completeness,Trade ID must be present after raw load,data-engineering,error,0,true,Investigate source file for missing TRADE_ID values
 RULE_RAW_002,trades,SOURCE_FILE,completeness,Source filename lineage must be captured,data-engineering,error,0,true,Verify COPY INTO preserves METADATA$FILENAME
 RULE_TRN_001,stg_trades,TRADE_ID,validity,TRADE_ID must be a non-empty string after trim,data-engineering,error,0,true,Reject blank or whitespace-only trade IDs

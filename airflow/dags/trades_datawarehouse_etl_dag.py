@@ -91,7 +91,11 @@ with DAG(
     load_dq_rule_catalog = PythonOperator(
         task_id="load_dq_rule_catalog",
         python_callable=run_dbt,
-        op_kwargs={"subcommand": "seed", "selector": "dq_rule_catalog"},
+        op_kwargs={
+            "subcommand": "seed",
+            "selector": "dq_rule_catalog",
+            "full_refresh": True,
+        },
         trigger_rule="all_done",
         execution_timeout=timedelta(minutes=15),
     )

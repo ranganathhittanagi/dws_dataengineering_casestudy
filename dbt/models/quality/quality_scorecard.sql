@@ -30,7 +30,7 @@ raw_count as (
 select
     '{{ etl_date }}'::VARCHAR as etl_date,
     c.RULE_ID,
-    c.RULE_NAME,
+    coalesce(r.RULE_NAME, c.DESCRIPTION) as RULE_NAME,
     c.DIMENSION,
     c.SEVERITY,
     coalesce(r.failure_count, 0) as failure_count,

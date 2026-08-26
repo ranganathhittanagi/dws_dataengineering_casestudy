@@ -12,15 +12,13 @@ DBT_PROJECT_DIR = "/opt/home/dbt"
 DBT_BIN = ["/opt/home/dbt_venv/bin/python", "-I", "/opt/home/dbt_venv/bin/dbt"]
 
 
-def run_dbt(subcommand: str, selector: str, **context):
+def run_dbt(subcommand: str, selector: str, full_refresh: bool = False, **context):
     """Run a dbt subcommand with the given selector and SSM-sourced env."""
     etl_date = context.get("ds") or context.get("etl_date", "")
-    command = (
-        DBT_BIN
-        + [subcommand, "--select"]
-        + selector.split()
-        + ["--vars", f'{{"etl_date": "{etl_date}"}}']
-    )
+    command = DBT_BIN + [subcommand, "--select"] + selector.split()
+    if full_refresh:
+        command.append("--full-refresh")
+    command += ["--vars", f'{{"etl_date": "{etl_date}"}}']
     env = {**os.environ, **dbt_environment()}
     result = subprocess.run(
         command,

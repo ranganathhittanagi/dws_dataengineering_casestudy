@@ -12,7 +12,7 @@ with raw_count as (
 ),
 
 valid_count as (
-    select count(*) as cnt from {{ ref('candidate_valid_trades') }}
+    select count(*) as cnt from {{ ref('valid_trades') }}
     where ETL_DATE between '{{ late_arrival_date }}' and '{{ etl_date }}'
 ),
 

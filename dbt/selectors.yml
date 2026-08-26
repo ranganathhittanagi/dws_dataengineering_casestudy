@@ -41,13 +41,6 @@ selectors:
       method: tag
       value: warehouse_quality
 
-  - name: publish
-    description: "Merge tested candidates into VALID_TRADES"
-    default: false
-    definition:
-      method: tag
-      value: publish
-
   - name: post_publish_audit
     description: "Post-publication reconciliation and scorecard"
     default: false

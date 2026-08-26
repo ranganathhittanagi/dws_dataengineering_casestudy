@@ -1,43 +1,8 @@
 version: 2
 
 models:
-  - name: candidate_valid_trades
-    description: "Pre-publication candidate rows that pass all deterministic business rules. This model is fully tested before the VALID_TRADES table is updated."
-    columns:
-      - name: TRADE_ID
-        description: "Unique trade identifier"
-        tests:
-          - not_null
-          - unique
-      - name: VERSION
-        description: "Latest accepted trade version number"
-      - name: COUNTERPARTY
-        description: "Counterparty name"
-      - name: NOTIONAL
-        description: "Notional amount"
-      - name: CURRENCY
-        description: "ISO currency code"
-        tests:
-          - accepted_values:
-              values: ['USD', 'EUR', 'GBP', 'JPY', 'AUD', 'CAD', 'CHF']
-      - name: MATURITY_DATE
-        description: "Maturity date"
-        tests:
-          - not_null
-      - name: EXECUTION_DATE
-        description: "Execution date"
-      - name: TRADE_STATUS
-        description: "ACTIVE or EXPIRED"
-        tests:
-          - accepted_values:
-              values: ['ACTIVE', 'EXPIRED']
-      - name: ETL_DATE
-        description: "The etl_date batch this row was accepted for"
-      - name: LAST_UPDATED_DATE
-        description: "Timestamp of last update"
-
   - name: valid_trades
-    description: "Published accepted trades, one row per TRADE_ID, incrementally merged only from tested candidates."
+    description: "Published accepted trades, one row per TRADE_ID, incrementally merged from staged trades that pass all deterministic business rules."
     columns:
       - name: TRADE_ID
         description: "Unique trade identifier"

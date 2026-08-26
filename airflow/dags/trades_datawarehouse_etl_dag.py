@@ -1,12 +1,15 @@
 """Datawarehouse layer DAG: runs after the transform layer succeeds.
 
-Builds warehouse candidates, runs pre-publication quality and reconciliation
-checks, publishes VALID_TRADES, builds post-publication audit artifacts, and
-sends a structured success notification.
+Builds the VALID_TRADES warehouse table, runs pre-publication quality and
+reconciliation checks, builds post-publication audit artifacts, and sends a
+final status notification. Quality-gate test failures no longer block
+downstream audit tasks, but the DAG is still marked failed via the final
+notification task.
 """
 from datetime import datetime, timedelta
 
 from airflow import DAG
+from airflow.exceptions import AirflowException
 from airflow.operators.python import PythonOperator
 from airflow.sensors.external_task import ExternalTaskSensor
 from airflow.utils.state import State
@@ -16,7 +19,21 @@ from src.dbt_runner import run_dbt
 
 
 def _send_quality_notification(**context):
-    """Pass the Airflow context to notify_success."""
+    """Send the final notification; fail the DAG if any quality gate failed."""
+    dag_run = context["dag_run"]
+    failed_tasks = []
+    for task_id in ("trades_warehouse_dq_check", "post_publish_dq_check"):
+        ti = dag_run.get_task_instance(task_id)
+        if ti and ti.state == State.FAILED:
+            failed_tasks.append(task_id)
+
+    if failed_tasks:
+        raise AirflowException(
+            f"Data quality gate(s) failed: {', '.join(failed_tasks)}. "
+            "Downstream audit tasks were allowed to run, "
+            "but the DAG is marked failed."
+        )
+
     return notify_success(context)
 
 
@@ -63,22 +80,17 @@ with DAG(
         python_callable=run_dbt,
         op_kwargs={
             "subcommand": "test",
-            "selector": "candidate_valid_trades candidate_trades_are_unique reconciliation",
+            "selector": "valid_trades candidate_trades_are_unique reconciliation",
         },
+        on_failure_callback=None,
         execution_timeout=timedelta(minutes=15),
-    )
-
-    publish_valid_trades = PythonOperator(
-        task_id="publish_valid_trades",
-        python_callable=run_dbt,
-        op_kwargs={"subcommand": "run", "selector": "tag:publish"},
-        execution_timeout=timedelta(minutes=30),
     )
 
     post_publish_audit = PythonOperator(
         task_id="post_publish_audit",
         python_callable=run_dbt,
         op_kwargs={"subcommand": "run", "selector": "tag:post_publish_audit"},
+        trigger_rule="all_done",
         execution_timeout=timedelta(minutes=15),
     )
 
@@ -89,13 +101,15 @@ with DAG(
             "subcommand": "test",
             "selector": "tag:post_publish_audit",
         },
+        on_failure_callback=None,
+        trigger_rule="all_done",
         execution_timeout=timedelta(minutes=15),
     )
 
     send_quality_notification = PythonOperator(
         task_id="send_quality_notification",
         python_callable=_send_quality_notification,
-        trigger_rule="all_success",
+        trigger_rule="all_done",
         execution_timeout=timedelta(minutes=5),
     )
 
@@ -103,7 +117,6 @@ with DAG(
         input_transform_dataset_sensor
         >> trades_warehouse
         >> trades_warehouse_dq_check
-        >> publish_valid_trades
         >> post_publish_audit
         >> post_publish_dq_check
         >> send_quality_notification

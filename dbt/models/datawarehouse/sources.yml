@@ -4,7 +4,7 @@ sources:
   - name: datawarehouse
     database: DATAWAREHOUSE_DB
     schema: DATAWAREHOUSE_SCHEMA
-    description: "Self-referencing lookup for the published datawarehouse layer. Used to break the compile-time cycle between candidate_valid_trades and valid_trades."
+    description: "Self-referencing lookup for the published datawarehouse layer. Used by valid_trades and rejected_trades to compare incoming versions against the current published state without creating a dbt ref() cycle."
     tables:
       - name: valid_trades
-        description: "Published accepted trades table. Referenced as a source by candidate_valid_trades and rejected_trades to compare incoming versions against the current published state without creating a dbt ref() cycle."
+        description: "Published accepted trades table. Referenced as a source by valid_trades and rejected_trades to compare incoming versions against the current published state."

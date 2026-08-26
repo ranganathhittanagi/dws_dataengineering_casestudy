@@ -40,20 +40,10 @@ with control_totals as (
 
     select
         'warehouse' as stage,
-        'candidate_valid_trades' as model,
-        '{{ etl_date }}'::VARCHAR as etl_date,
-        count(*) as row_count
-    from {{ ref('candidate_valid_trades') }}
-    where ETL_DATE between '{{ late_arrival_date }}' and '{{ etl_date }}'
-
-    union all
-
-    select
-        'warehouse' as stage,
         'valid_trades' as model,
         '{{ etl_date }}'::VARCHAR as etl_date,
         count(*) as row_count
-    from {{ source('datawarehouse', 'valid_trades') }}
+    from {{ ref('valid_trades') }}
     where ETL_DATE between '{{ late_arrival_date }}' and '{{ etl_date }}'
 
 )

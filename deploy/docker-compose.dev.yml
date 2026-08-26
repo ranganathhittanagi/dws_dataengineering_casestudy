@@ -19,7 +19,7 @@ services:
     build:
       context: ..
       dockerfile: airflow/Dockerfile
-    command: ["bash", "-c", "exec sleep infinity"]
+    command: ["bash", "-c", "/opt/home/dbt_venv/bin/dbt deps --project-dir /opt/home/dbt && exec sleep infinity"]
     env_file:
       - runtime.env
     environment:

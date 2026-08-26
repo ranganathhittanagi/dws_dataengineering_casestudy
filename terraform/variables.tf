@@ -159,15 +159,15 @@ variable "admin_ip_allowlist" {
 }
 
 variable "control_instance_type" {
-  description = "Instance type for the Airflow control plane (webserver+scheduler+Postgres+Redis). t3.small (2GB) is the realistic minimum; t3.micro fits free tier but will swap heavily."
+  description = "Instance type for the Airflow control plane (webserver+scheduler+Postgres+Redis). m7i-flex.large (8GB) provides stable operation under the AWS free tier."
   type        = string
-  default     = "t3.small"
+  default     = "m7i-flex.large"
 }
 
 variable "dev_instance_type" {
   description = "Instance type for dev-ec2-instance (SSH-accessible ad hoc development box)"
   type        = string
-  default     = "t3.micro"
+  default     = "t3.small"
 }
 
 variable "dev_ssh_public_key_path" {
@@ -182,11 +182,7 @@ variable "dev_ssh_cidr" {
   default     = "106.51.217.210/32"
 }
 
-variable "idle_evaluation_periods" {
-  description = "Number of 15-minute periods before the dev EC2 instance is auto-stopped (default 8 = 2 hours)"
-  type        = number
-  default     = 8
-}
+
 
 variable "repo_url" {
   description = "HTTPS git URL of this repository, cloned onto the instances at boot (must be public or reachable without credentials)"

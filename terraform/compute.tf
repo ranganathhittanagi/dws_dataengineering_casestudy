@@ -240,29 +240,6 @@ resource "aws_cloudwatch_metric_alarm" "dev_ec2_recover" {
   ]
 }
 
-# --- Idle auto-stop alarm ---
-# Only the development instance stops after 30 minutes of low CPU. The control instance
-# stays online so the scheduler and colocated worker can run DAGs continuously.
-
-resource "aws_cloudwatch_metric_alarm" "dev_idle" {
-  alarm_name          = "${var.project_name}-dev-idle-stop"
-  alarm_description   = "Stop dev-ec2-instance after 2 hours of uptime (no CPU check)"
-  namespace           = "AWS/EC2"
-  metric_name         = "StatusCheckFailed"
-  statistic           = "Average"
-  comparison_operator = "GreaterThanOrEqualToThreshold"
-  threshold           = 0
-  period              = 900
-  evaluation_periods  = var.idle_evaluation_periods
-
-  dimensions = {
-    InstanceId = aws_instance.dev_ec2.id
-  }
-
-  alarm_actions = [
-    "arn:aws:automate:${var.aws_region}:ec2:stop",
-    aws_sns_topic.pipeline_alerts.arn,
-  ]
-
-  ok_actions = [aws_sns_topic.pipeline_alerts.arn]
-}
+# --- Idle auto-stop alarm (REMOVED) ---
+# The dev-ec2-instance is never stopped automatically. The owner will manually
+# stop/start it as needed to control costs.

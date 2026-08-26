@@ -92,6 +92,7 @@ services:
       - bash
       - -c
       - |
+        /opt/home/dbt_venv/bin/dbt deps --project-dir /opt/home/dbt
         airflow db migrate
         airflow users create \
           --username admin \

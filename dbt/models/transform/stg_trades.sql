@@ -7,7 +7,7 @@
 {%- set etl_date = var('etl_date', run_started_at.strftime('%Y-%m-%d')) -%}
 {%- set late_arrival_date = (modules.datetime.datetime.strptime(etl_date, '%Y-%m-%d') - modules.datetime.timedelta(days=1)).strftime('%Y-%m-%d') -%}
 
-{%- set approved_currencies = ['USD','EUR','GBP','JPY','AUD','CAD','CHF'] -%}
+{%- set approved_currencies = ["'USD'","'EUR'","'GBP'","'JPY'","'AUD'","'CAD'","'CHF'"] -%}
 
 with raw_trades as (
 

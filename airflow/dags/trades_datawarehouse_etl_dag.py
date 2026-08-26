@@ -97,7 +97,19 @@ with DAG(
     post_publish_audit = PythonOperator(
         task_id="post_publish_audit",
         python_callable=run_dbt,
-        op_kwargs={"subcommand": "run", "selector": "tag:post_publish_audit"},
+        op_kwargs={
+            "subcommand": "run",
+            "selector": "batch_control_totals reconciliation",
+        },
+        trigger_rule="all_done",
+        execution_timeout=timedelta(minutes=15),
+    )
+
+    build_quality_scorecard = PythonOperator(
+        task_id="build_quality_scorecard",
+        python_callable=run_dbt,
+        op_kwargs={"subcommand": "run", "selector": "quality_scorecard"},
+        trigger_rule="all_done",
         execution_timeout=timedelta(minutes=15),
     )
 
@@ -126,6 +138,7 @@ with DAG(
         >> trades_warehouse_dq_check
         >> load_dq_rule_catalog
         >> post_publish_audit
+        >> build_quality_scorecard
         >> post_publish_dq_check
         >> send_quality_notification
     )

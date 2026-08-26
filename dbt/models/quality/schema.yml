@@ -1,7 +1,7 @@
 version: 2
 
 models:
-  - name: batch_control_totals
+  - name: batch_stats
     description: "Control totals for each batch across raw, transform, quarantine, candidate, and published stages."
     columns:
       - name: stage

@@ -9,9 +9,10 @@
       type='table'
   ) %}
   {%- set grant_config = config.get('grants') %}
-  {%- set stage = config.require('stage') %}
-  {%- set file_format = config.require('file_format') %}
-  {%- set copy_options = (config.get('meta', {}) or {}).get('copy_options', "ON_ERROR = 'CONTINUE' FORCE = FALSE PURGE = FALSE") %}
+  {%- set meta = config.get('meta', {}) or {} %}
+  {%- set stage = meta.get('stage', config.get('stage', '@RAW_DB.RAW_SCHEMA.RAW_DATA_STAGE')) %}
+  {%- set file_format = meta.get('file_format', config.get('file_format', 'RAW_DB.RAW_SCHEMA.CSV_FORMAT')) %}
+  {%- set copy_options = meta.get('copy_options', "ON_ERROR = 'CONTINUE' FORCE = FALSE PURGE = FALSE") %}
 
   {{ run_hooks(pre_hooks, inside_transaction=False) }}
   {{ run_hooks(pre_hooks, inside_transaction=True) }}
@@ -31,8 +32,10 @@
 
   {% call statement('main') -%}
     COPY INTO {{ target_relation }}
-    FROM {{ stage }}
-    FILE_FORMAT = {{ file_format }}
+    FROM (
+      {{ sql }}
+    )
+    FILE_FORMAT = (FORMAT_NAME = {{ file_format }})
     {{ copy_options }}
   {%- endcall %}
 

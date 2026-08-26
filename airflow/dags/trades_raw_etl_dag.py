@@ -61,6 +61,7 @@ with DAG(
 
     emit_raw_dataset = EmptyOperator(
         task_id="emit_raw_dataset",
+        trigger_rule="all_success",
     )
 
     input_s3_file_sensor >> trades_raw >> trades_raw_dq_check >> emit_raw_dataset

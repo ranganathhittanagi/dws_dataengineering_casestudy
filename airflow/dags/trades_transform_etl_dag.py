@@ -59,6 +59,7 @@ with DAG(
 
     emit_transform_dataset = EmptyOperator(
         task_id="emit_transform_dataset",
+        trigger_rule="all_success",
     )
 
     input_raw_dataset_sensor >> trades_transform >> trades_transform_dq_check >> emit_transform_dataset

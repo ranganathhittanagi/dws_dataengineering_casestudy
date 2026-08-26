@@ -18,8 +18,10 @@ from src.alerting import notify_failure, notify_success
 from src.dbt_runner import run_dbt
 
 
-def _send_quality_notification(**context):
-    """Send the final notification; fail the DAG if any quality gate failed."""
+def _build_scorecard_and_send_notification(**context):
+    """Build the scorecard, then fail the DAG if any quality gate failed."""
+    run_dbt(subcommand="run", selector="quality_scorecard", **context)
+
     dag_run = context["dag_run"]
     failed_tasks = []
     for task_id in ("trades_warehouse_dq_check", "post_publish_dq_check"):
@@ -97,18 +99,7 @@ with DAG(
     post_publish_audit = PythonOperator(
         task_id="post_publish_audit",
         python_callable=run_dbt,
-        op_kwargs={
-            "subcommand": "run",
-            "selector": "batch_control_totals reconciliation",
-        },
-        trigger_rule="all_done",
-        execution_timeout=timedelta(minutes=15),
-    )
-
-    build_quality_scorecard = PythonOperator(
-        task_id="build_quality_scorecard",
-        python_callable=run_dbt,
-        op_kwargs={"subcommand": "run", "selector": "quality_scorecard"},
+        op_kwargs={"subcommand": "run", "selector": "batch_stats reconciliation"},
         trigger_rule="all_done",
         execution_timeout=timedelta(minutes=15),
     )
@@ -125,11 +116,11 @@ with DAG(
         execution_timeout=timedelta(minutes=15),
     )
 
-    send_quality_notification = PythonOperator(
-        task_id="send_quality_notification",
-        python_callable=_send_quality_notification,
+    build_scorecard_and_send_notification = PythonOperator(
+        task_id="build_scorecard_and_send_notification",
+        python_callable=_build_scorecard_and_send_notification,
         trigger_rule="all_done",
-        execution_timeout=timedelta(minutes=5),
+        execution_timeout=timedelta(minutes=20),
     )
 
     (
@@ -138,7 +129,6 @@ with DAG(
         >> trades_warehouse_dq_check
         >> load_dq_rule_catalog
         >> post_publish_audit
-        >> build_quality_scorecard
         >> post_publish_dq_check
-        >> send_quality_notification
+        >> build_scorecard_and_send_notification
     )

@@ -22,8 +22,21 @@ def run_dbt(subcommand: str, selector: str, **context):
         + ["--vars", f'{{"etl_date": "{etl_date}"}}']
     )
     env = {**os.environ, **dbt_environment()}
-    result = subprocess.run(command, cwd=DBT_PROJECT_DIR, env=env, check=False)
+    result = subprocess.run(
+        command,
+        cwd=DBT_PROJECT_DIR,
+        env=env,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if result.stdout:
+        print(result.stdout)
+    if result.stderr:
+        print(result.stderr)
     if result.returncode != 0:
         raise RuntimeError(
-            f"dbt {subcommand} --select {selector} failed with exit code {result.returncode}"
+            f"dbt {subcommand} --select {selector} failed with exit code {result.returncode}\n"
+            f"stdout:\n{result.stdout}\n"
+            f"stderr:\n{result.stderr}"
         )

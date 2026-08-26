@@ -31,9 +31,7 @@
 
   {% call statement('main') -%}
     COPY INTO {{ target_relation }}
-    FROM (
-      {{ sql }}
-    )
+    FROM {{ stage }}
     FILE_FORMAT = {{ file_format }}
     {{ copy_options }}
   {%- endcall %}

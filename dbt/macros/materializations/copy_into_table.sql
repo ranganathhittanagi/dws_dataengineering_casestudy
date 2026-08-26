@@ -11,7 +11,7 @@
   {%- set grant_config = config.get('grants') %}
   {%- set stage = config.require('stage') %}
   {%- set file_format = config.require('file_format') %}
-  {%- set copy_options = config.get('copy_options', default="ON_ERROR = 'CONTINUE' FORCE = FALSE PURGE = FALSE") %}
+  {%- set copy_options = (config.get('meta', {}) or {}).get('copy_options', "ON_ERROR = 'CONTINUE' FORCE = FALSE PURGE = FALSE") %}
 
   {{ run_hooks(pre_hooks, inside_transaction=False) }}
   {{ run_hooks(pre_hooks, inside_transaction=True) }}

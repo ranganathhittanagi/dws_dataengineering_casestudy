@@ -182,16 +182,10 @@ variable "dev_ssh_cidr" {
   default     = "106.51.217.210/32"
 }
 
-variable "idle_cpu_threshold" {
-  description = "Average CPU % below which an EC2 instance is considered idle and auto-stopped by CloudWatch"
-  type        = number
-  default     = 5
-}
-
 variable "idle_evaluation_periods" {
-  description = "Number of 15-minute periods with low CPU before CloudWatch triggers an EC2 stop (e.g. 2 = 30 minutes)"
+  description = "Number of 15-minute periods before the dev EC2 instance is auto-stopped (default 8 = 2 hours)"
   type        = number
-  default     = 2
+  default     = 8
 }
 
 variable "repo_url" {

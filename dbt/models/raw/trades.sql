@@ -5,7 +5,7 @@
     materialized='copy_into_table',
     stage='@RAW_DB.RAW_SCHEMA.RAW_DATA_STAGE',
     file_format='RAW_DB.RAW_SCHEMA.CSV_FORMAT',
-    copy_options="ON_ERROR = 'CONTINUE' FORCE = FALSE PURGE = FALSE PATTERN = '.*trades_(" ~ late_arrival_date ~ "|" ~ etl_date ~ ").*'",
+    meta={"copy_options": "ON_ERROR = 'CONTINUE' FORCE = FALSE PURGE = FALSE PATTERN = '.*trades_(" ~ late_arrival_date ~ "|" ~ etl_date ~ ").*'"},
     tags=['ingest']
 ) }}
 

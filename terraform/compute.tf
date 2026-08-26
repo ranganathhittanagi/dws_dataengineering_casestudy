@@ -246,12 +246,12 @@ resource "aws_cloudwatch_metric_alarm" "dev_ec2_recover" {
 
 resource "aws_cloudwatch_metric_alarm" "dev_idle" {
   alarm_name          = "${var.project_name}-dev-idle-stop"
-  alarm_description   = "Stop dev-ec2-instance after 30 minutes of low CPU"
+  alarm_description   = "Stop dev-ec2-instance after 2 hours of uptime (no CPU check)"
   namespace           = "AWS/EC2"
-  metric_name         = "CPUUtilization"
+  metric_name         = "StatusCheckFailed"
   statistic           = "Average"
-  comparison_operator = "LessThanThreshold"
-  threshold           = var.idle_cpu_threshold
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  threshold           = 0
   period              = 900
   evaluation_periods  = var.idle_evaluation_periods
 

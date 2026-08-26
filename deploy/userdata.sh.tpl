@@ -69,6 +69,12 @@ else
   git -C "$APP_DIR" pull --ff-only origin "$REPO_BRANCH"
 fi
 
+# Ensure the checked-out repo is writable by the container airflow user.
+# The apache/airflow image uses uid 50000 for airflow; group 0 (root) is kept
+# so host root processes (e.g. git pull, SSM, deploy scripts) remain able to
+# manage files while the container user can write dbt packages/lock files.
+chown -R 50000:0 "$APP_DIR"
+
 # --- Runtime secrets/config from SSM, then start the stack ---
 export AWS_REGION AIRFLOW_PARAM_PATH
 bash "$APP_DIR/deploy/fetch_runtime_env.sh" "$ROLE"

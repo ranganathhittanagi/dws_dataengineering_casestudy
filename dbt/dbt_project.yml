@@ -25,7 +25,7 @@ flags:
   source_freshness_run_project_hooks: true
 
 on-run-end:
-  - '{{ elementary.upload_dbt_artifacts(results) }}'
+  - '{{ elementary.upload_dbt_artifacts() }}'
 
 models:
   trade_data:

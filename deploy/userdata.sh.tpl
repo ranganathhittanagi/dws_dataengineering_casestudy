@@ -15,9 +15,6 @@ AIRFLOW_PARAM_PATH="${airflow_param_path}"
 ROLE="${role}"
 APP_DIR=/opt/app
 
-# Allow root (bootstrap, SSM deploy) to operate on a repo whose owner is the container user.
-git config --global --add safe.directory "$APP_DIR"
-
 # --- Base packages ---
 dnf install -y docker git
 systemctl enable --now docker
@@ -72,11 +69,10 @@ else
   git -C "$APP_DIR" pull --ff-only origin "$REPO_BRANCH"
 fi
 
-# Ensure the checked-out repo is writable by the container airflow user.
-# The apache/airflow image uses uid 50000 for airflow; group 0 (root) is kept
-# so host root processes (e.g. git pull, SSM, deploy scripts) remain able to
-# manage files while the container user can write dbt packages/lock files.
-chown -R 50000:0 "$APP_DIR"
+# Ensure the dbt project is writable by the container airflow user.
+# The apache/airflow image uses uid 50000 for airflow; the repo root stays
+# root-owned so git operations from SSM/bootstrap keep working.
+chown -R 50000:0 "$APP_DIR/dbt"
 
 # --- Runtime secrets/config from SSM, then start the stack ---
 export AWS_REGION AIRFLOW_PARAM_PATH

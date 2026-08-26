@@ -31,6 +31,7 @@ x-airflow-common:
     AIRFLOW__WEBSERVER__WORKERS: 1
     AIRFLOW__SCHEDULER__PARSING_PROCESSES: 1
     AIRFLOW_HOME: /opt/home/airflow
+    PYTHONDONTWRITEBYTECODE: '1'
     PYTHONPATH: /opt/home
     DBT_PROFILES_DIR: /opt/home/dbt
     DBT_LOG_PATH: /opt/home/dbt_logs

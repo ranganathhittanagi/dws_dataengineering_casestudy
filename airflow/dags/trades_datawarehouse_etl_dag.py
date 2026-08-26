@@ -7,7 +7,7 @@ sends a structured success notification.
 from datetime import datetime, timedelta
 
 from airflow import DAG
-from airflow.operators.python import PythonOperator, get_current_context
+from airflow.operators.python import PythonOperator
 from airflow.sensors.external_task import ExternalTaskSensor
 from airflow.utils.state import State
 
@@ -15,9 +15,8 @@ from src.alerting import notify_failure, notify_success
 from src.dbt_runner import run_dbt
 
 
-def _send_quality_notification(**kwargs):
-    """Wrapper so notify_success receives the current Airflow context."""
-    context = get_current_context()
+def _send_quality_notification(**context):
+    """Pass the Airflow context to notify_success."""
     return notify_success(context)
 
 

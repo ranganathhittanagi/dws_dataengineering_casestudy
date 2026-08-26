@@ -74,6 +74,11 @@ fi
 # root-owned so git operations from SSM/bootstrap keep working.
 chown -R 50000:0 "$APP_DIR/dbt"
 
+# Remove stale compiled Python bytecode so the scheduler never loads an
+# old cached DAG or module from a previous deployment. PYTHONDONTWRITEBYTECODE
+# in the compose env then prevents root-owned __pycache__ conflicts.
+find "$APP_DIR" -type d -name '__pycache__' -prune -exec rm -rf {} +
+
 # --- Runtime secrets/config from SSM, then start the stack ---
 export AWS_REGION AIRFLOW_PARAM_PATH
 bash "$APP_DIR/deploy/fetch_runtime_env.sh" "$ROLE"

@@ -24,6 +24,7 @@ services:
       - runtime.env
     environment:
       AIRFLOW_HOME: /opt/home/airflow
+      PYTHONDONTWRITEBYTECODE: '1'
       PYTHONPATH: /opt/home
       DBT_PROFILES_DIR: /opt/home/dbt
       DBT_LOG_PATH: /opt/home/dbt_logs

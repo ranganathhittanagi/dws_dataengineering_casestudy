@@ -15,7 +15,7 @@
   {% set create_policy_sql %}
   CREATE OR ALTER ROW ACCESS POLICY {{ policy_schema }}.currency_row_policy AS (currency_code STRING)
   RETURNS BOOLEAN ->
-    IS_ROLE_IN_SESSION('DWS_SERVICE_ROLE', 'ACCOUNTADMIN')
+    IS_ROLE_IN_SESSION('DWS_SERVICE_ROLE') OR IS_ROLE_IN_SESSION('ACCOUNTADMIN')
     OR EXISTS (
       SELECT 1
       FROM {{ mapping_table }}

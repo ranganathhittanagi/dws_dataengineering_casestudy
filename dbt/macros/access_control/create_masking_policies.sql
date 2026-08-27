@@ -7,7 +7,7 @@
 CREATE OR ALTER MASKING POLICY {{ policy_schema }}.counterparty_mask AS (val STRING)
 RETURNS STRING ->
   CASE
-    WHEN IS_ROLE_IN_SESSION({% for r in privileged_roles %}'{{ r }}'{% if not loop.last %},{% endif %}{% endfor %}) THEN val
+    WHEN IS_ROLE_IN_SESSION('{{ privileged_roles | join("') OR IS_ROLE_IN_SESSION('") }}') THEN val
     ELSE '***'
   END
 {% endset %}
@@ -17,7 +17,7 @@ RETURNS STRING ->
 CREATE OR ALTER MASKING POLICY {{ policy_schema }}.notional_mask AS (val NUMBER(18,2))
 RETURNS NUMBER(18,2) ->
   CASE
-    WHEN IS_ROLE_IN_SESSION({% for r in privileged_roles %}'{{ r }}'{% if not loop.last %},{% endif %}{% endfor %}) THEN val
+    WHEN IS_ROLE_IN_SESSION('{{ privileged_roles | join("') OR IS_ROLE_IN_SESSION('") }}') THEN val
     ELSE 0
   END
 {% endset %}

@@ -1,0 +1,31 @@
+version: 2
+
+sources:
+  - name: raw
+    database: "{{ env_var('DBT_TARGET_DATABASE', 'RAW_DB') }}"
+    schema: "{{ env_var('DBT_TARGET_SCHEMA', 'RAW_SCHEMA') }}"
+    description: "Raw tables populated outside of dbt (e.g. by Snowpipe)."
+    tables:
+      - name: trades_stream
+        description: "Streaming bronze table populated by Snowpipe from s3://streaming-trades-source-dws."
+        columns:
+          - name: TRADE_ID
+            description: "Trade identifier as a string"
+          - name: VERSION
+            description: "Trade version as a string"
+          - name: COUNTERPARTY
+            description: "Counterparty name as a string"
+          - name: NOTIONAL
+            description: "Notional amount as a string"
+          - name: CURRENCY
+            description: "Currency code as a string"
+          - name: MATURITY_DATE
+            description: "Maturity date as a string"
+          - name: EXECUTION_DATE
+            description: "Execution date as a string"
+          - name: ROW_ID
+            description: "Source row number from the streaming file"
+          - name: SOURCE_FILENAME
+            description: "Full source file path from the streaming stage"
+          - name: LOAD_TIMESTAMP
+            description: "When Snowpipe loaded the row"

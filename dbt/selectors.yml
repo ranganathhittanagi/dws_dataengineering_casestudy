@@ -27,6 +27,13 @@ selectors:
       method: tag
       value: transform_quality
 
+  - name: streaming
+    description: "Streaming silver models"
+    default: false
+    definition:
+      method: tag
+      value: streaming
+
   - name: warehouse_candidate
     description: "Build warehouse candidate models"
     default: false

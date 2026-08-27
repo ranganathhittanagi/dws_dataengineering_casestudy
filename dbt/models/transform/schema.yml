@@ -42,3 +42,45 @@ models:
         description: "When the source row was loaded"
       - name: LAST_UPDATED_DATE
         description: "When this row was last transformed"
+
+  - name: stg_trades_stream
+    description: "Parsed streaming trades loaded by Snowpipe. Normalized and validated like stg_trades, then merged into valid_trades."
+    columns:
+      - name: TRADE_ID
+        description: "Trimmed trade identifier; null when empty"
+      - name: VERSION
+        description: "Parsed version number; null when unparseable or negative"
+      - name: COUNTERPARTY
+        description: "Trimmed counterparty; null when empty"
+      - name: NOTIONAL
+        description: "Parsed notional; null when unparseable or not positive"
+      - name: CURRENCY
+        description: "Trimmed currency; null when empty"
+      - name: MATURITY_DATE
+        description: "Parsed maturity date; null when unparseable"
+      - name: EXECUTION_DATE
+        description: "Parsed execution date; null when unparseable"
+      - name: IS_TRADE_ID_VALID
+        description: "True when TRADE_ID is non-empty"
+      - name: IS_VERSION_VALID
+        description: "True when VERSION parses to a non-negative integer"
+      - name: IS_NOTIONAL_VALID
+        description: "True when NOTIONAL parses to a positive number"
+      - name: IS_CURRENCY_VALID
+        description: "True when CURRENCY is in the approved domain"
+      - name: IS_MATURITY_VALID
+        description: "True when MATURITY_DATE parses"
+      - name: IS_EXECUTION_VALID
+        description: "True when EXECUTION_DATE parses"
+      - name: IS_DATE_ORDER_VALID
+        description: "True when MATURITY_DATE >= EXECUTION_DATE (and both parse)"
+      - name: IS_VALID
+        description: "True when all per-field validity flags are true"
+      - name: ROW_ID
+        description: "Source row number from the streaming file"
+      - name: LOAD_TIMESTAMP
+        description: "When Snowpipe loaded the source row"
+      - name: ETL_DATE
+        description: "The load date used for batch alignment"
+      - name: LAST_UPDATED_DATE
+        description: "When this row was last transformed"

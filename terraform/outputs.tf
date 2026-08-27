@@ -83,6 +83,31 @@ output "snowflake_external_id" {
   value       = snowflake_storage_integration.s3.storage_aws_external_id
 }
 
+output "streaming_s3_bucket" {
+  description = "S3 bucket for streaming trade files"
+  value       = aws_s3_bucket.streaming_trades_source.bucket
+}
+
+output "streaming_stage" {
+  description = "Snowflake stage for streaming trade files"
+  value       = "${snowflake_database.raw.name}.${snowflake_schema.raw.name}.${snowflake_stage.streaming_raw_data.name}"
+}
+
+output "streaming_table" {
+  description = "Bronze table for streaming trade records"
+  value       = "${snowflake_database.raw.name}.${snowflake_schema.raw.name}.${snowflake_table.trades_stream.name}"
+}
+
+output "streaming_pipe" {
+  description = "Snowpipe that auto-ingests streaming trade files"
+  value       = "${snowflake_database.raw.name}.${snowflake_schema.raw.name}.${snowflake_pipe.trades_stream.name}"
+}
+
+output "streaming_sns_topic_arn" {
+  description = "SNS topic that receives S3 event notifications for the streaming bucket"
+  value       = aws_sns_topic.streaming_s3_events.arn
+}
+
 output "keypair_note" {
   description = "Authentication reminder"
   value       = "Use the private key file matching the RSA public key configured on ${snowflake_user.service_user.name}."

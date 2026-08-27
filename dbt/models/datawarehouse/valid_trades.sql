@@ -10,11 +10,46 @@
 {%- set source_dates = source_window_dates('trades', etl_date) -%}
 {%- set late_arrival_date = source_dates[-1] -%}
 
-with new_trades as (
+with batch_trades as (
 
-    select * from {{ ref('stg_trades') }}
+    select
+        TRADE_ID,
+        VERSION,
+        COUNTERPARTY,
+        NOTIONAL,
+        CURRENCY,
+        MATURITY_DATE,
+        EXECUTION_DATE,
+        ETL_DATE,
+        LAST_UPDATED_DATE
+    from {{ ref('stg_trades') }}
     where ETL_DATE between '{{ late_arrival_date }}' and '{{ etl_date }}'
         and IS_VALID
+
+),
+
+stream_trades as (
+
+    select
+        TRADE_ID,
+        VERSION,
+        COUNTERPARTY,
+        NOTIONAL,
+        CURRENCY,
+        MATURITY_DATE,
+        EXECUTION_DATE,
+        ETL_DATE,
+        LAST_UPDATED_DATE
+    from {{ ref('stg_trades_stream') }}
+    where IS_VALID
+
+),
+
+new_trades as (
+
+    select * from batch_trades
+    union all
+    select * from stream_trades
 
 ),
 

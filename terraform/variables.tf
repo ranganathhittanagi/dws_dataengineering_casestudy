@@ -120,6 +120,36 @@ variable "s3_source_prefix" {
   default     = "raw/trades"
 }
 
+variable "streaming_s3_bucket_name" {
+  description = "S3 bucket holding streaming trade files ingested by Snowpipe"
+  type        = string
+  default     = "streaming-trades-source-dws"
+}
+
+variable "streaming_s3_source_prefix" {
+  description = "Key prefix within the streaming bucket where trade files land"
+  type        = string
+  default     = "raw/trades"
+}
+
+variable "streaming_storage_integration_name" {
+  description = "Name of the Snowflake storage integration for the streaming S3 bucket"
+  type        = string
+  default     = "S3_STREAMING_TRADES_INTEGRATION"
+}
+
+variable "streaming_snowflake_role_name" {
+  description = "Name of the IAM role Snowflake assumes to read the streaming S3 bucket"
+  type        = string
+  default     = "snowflake-streaming-trades-s3-access"
+}
+
+variable "streaming_sns_topic_name" {
+  description = "SNS topic that receives S3 event notifications for the streaming bucket"
+  type        = string
+  default     = "streaming-trades-s3-events"
+}
+
 variable "storage_integration_name" {
   description = "Name of the Snowflake storage integration for S3"
   type        = string

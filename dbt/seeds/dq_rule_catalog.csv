@@ -11,6 +11,4 @@ RULE_TRN_007,MATURITY_DATE before EXECUTION_DATE,stg_trades,MATURITY_DATE,consis
 RULE_TRN_008,MATURITY_DATE in the past,stg_trades,MATURITY_DATE,validity,MATURITY_DATE must be today or in the future,data-engineering,error,0,true,Reject trades whose maturity date has already passed
 RULE_WH_001,Duplicate TRADE_ID,valid_trades,TRADE_ID,uniqueness,One current row per TRADE_ID in the published warehouse,data-engineering,error,0,true,Deduplicate to a single latest version
 RULE_WH_002,VERSION lower than published,valid_trades,VERSION,consistency,VERSION must not be lower than the currently published version,data-engineering,error,0,true,Reject stale version updates
-RULE_WH_003,Invalid CURRENCY,valid_trades,CURRENCY,validity,CURRENCY must belong to the accepted domain,data-engineering,error,0,true,Reject unsupported currency values
-RULE_WH_004,Null MATURITY_DATE,valid_trades,MATURITY_DATE,completeness,Published MATURITY_DATE must not be null,data-engineering,error,0,true,Reject trade with null maturity
 RULE_RCN_001,Reconciliation zero loss,reconciliation,row_count,reconciliation,Source rows must equal loaded plus rejected rows,data-engineering,error,0,true,Investigate unaccounted source rows

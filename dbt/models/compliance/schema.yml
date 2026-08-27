@@ -8,8 +8,15 @@ models:
         description: "Rule identifier from the rule catalog"
         tests:
           - not_null
+          - relationships:
+              to: ref('dq_rule_catalog')
+              field: RULE_ID
       - name: SOURCE_TYPE
         description: "BATCH or STREAM, indicating which silver model produced the rejected record"
+        tests:
+          - accepted_values:
+              values: ['BATCH', 'STREAM']
+              severity: warn
       - name: RULE_NAME
         description: "Short rule name"
       - name: REJECTION_REASON

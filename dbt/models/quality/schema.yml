@@ -2,7 +2,7 @@ version: 2
 
 models:
   - name: batch_stats
-    description: "Control totals for each batch across raw, transform, quarantine, candidate, and published stages."
+    description: "Control totals for each batch across raw, transform, quarantine, candidate, and published stages for both batch and streaming pipelines."
     columns:
       - name: stage
         description: "Pipeline stage"

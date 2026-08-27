@@ -30,6 +30,26 @@ with control_totals as (
     union all
 
     select
+        'raw' as stage,
+        'trades_stream' as model,
+        '{{ etl_date }}'::VARCHAR as etl_date,
+        count(*) as row_count
+    from {{ source('raw', 'trades_stream') }}
+    where TO_VARCHAR(LOAD_TIMESTAMP, 'YYYY-MM-DD') between '{{ late_arrival_date }}' and '{{ etl_date }}'
+
+    union all
+
+    select
+        'transform' as stage,
+        'stg_trades_stream' as model,
+        '{{ etl_date }}'::VARCHAR as etl_date,
+        count(*) as row_count
+    from {{ ref('stg_trades_stream') }}
+    where ETL_DATE between '{{ late_arrival_date }}' and '{{ etl_date }}'
+
+    union all
+
+    select
         'quarantine' as stage,
         'rejected_trades' as model,
         '{{ etl_date }}'::VARCHAR as etl_date,

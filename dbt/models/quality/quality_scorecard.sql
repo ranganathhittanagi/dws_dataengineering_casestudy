@@ -23,9 +23,20 @@ catalog as (
     select * from {{ ref('dq_rule_catalog') }}
 ),
 
-raw_count as (
+batch_raw_count as (
     select count(*) as cnt from {{ ref('trades') }}
     where ETL_DATE between '{{ late_arrival_date }}' and '{{ etl_date }}'
+),
+
+stream_raw_count as (
+    select count(*) as cnt from {{ source('raw', 'trades_stream') }}
+    where TO_VARCHAR(LOAD_TIMESTAMP, 'YYYY-MM-DD') between '{{ late_arrival_date }}' and '{{ etl_date }}'
+),
+
+raw_count as (
+    select b.cnt + s.cnt as cnt
+    from batch_raw_count b
+    cross join stream_raw_count s
 )
 
 select

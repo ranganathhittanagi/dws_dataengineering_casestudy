@@ -20,13 +20,6 @@ with raw_trades as (
 parsed as (
 
     select
-        TRADE_ID as RAW_TRADE_ID,
-        VERSION as RAW_VERSION,
-        COUNTERPARTY as RAW_COUNTERPARTY,
-        NOTIONAL as RAW_NOTIONAL,
-        CURRENCY as RAW_CURRENCY,
-        MATURITY_DATE as RAW_MATURITY_DATE,
-        EXECUTION_DATE as RAW_EXECUTION_DATE,
         SOURCE_FILENAME,
         ROW_ID,
         ETL_DATE,
@@ -69,13 +62,6 @@ deduplicated as (
 final as (
 
     select
-        RAW_TRADE_ID,
-        RAW_VERSION,
-        RAW_COUNTERPARTY,
-        RAW_NOTIONAL,
-        RAW_CURRENCY,
-        RAW_MATURITY_DATE,
-        RAW_EXECUTION_DATE,
         TRADE_ID,
         VERSION,
         COUNTERPARTY,

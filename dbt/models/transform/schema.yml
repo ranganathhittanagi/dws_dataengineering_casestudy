@@ -2,22 +2,8 @@ version: 2
 
 models:
   - name: stg_trades
-    description: "Parsed trades with raw values and explicit validity flags. Invalid values are kept as null/empty rather than silently replaced with defaults so the quarantine layer can record the exact failure."
+    description: "Parsed trades with explicit validity flags. Invalid values are kept as null/empty rather than silently replaced with defaults so the quarantine layer can record the failure."
     columns:
-      - name: RAW_TRADE_ID
-        description: "Original TRADE_ID as loaded from the source file"
-      - name: RAW_VERSION
-        description: "Original VERSION as loaded from the source file"
-      - name: RAW_COUNTERPARTY
-        description: "Original COUNTERPARTY as loaded from the source file"
-      - name: RAW_NOTIONAL
-        description: "Original NOTIONAL as loaded from the source file"
-      - name: RAW_CURRENCY
-        description: "Original CURRENCY as loaded from the source file"
-      - name: RAW_MATURITY_DATE
-        description: "Original MATURITY_DATE as loaded from the source file"
-      - name: RAW_EXECUTION_DATE
-        description: "Original EXECUTION_DATE as loaded from the source file"
       - name: TRADE_ID
         description: "Trimmed trade identifier; null when empty"
       - name: VERSION

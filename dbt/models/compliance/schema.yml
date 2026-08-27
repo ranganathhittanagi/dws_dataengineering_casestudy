@@ -2,7 +2,7 @@ version: 2
 
 models:
   - name: rejected_trades
-    description: "One row per record per failed quality rule. A single source record can produce multiple quarantine rows, each with a rule ID, rule name, human-readable reason, raw values, and full lineage."
+    description: "One row per record per failed quality rule. A single source record can produce multiple quarantine rows, each with a rule ID, rule name, human-readable reason, parsed values, and full lineage."
     columns:
       - name: RULE_ID
         description: "Rule identifier from the rule catalog"
@@ -18,24 +18,21 @@ models:
         description: "Trade identifier (may be null if the rule is a missing trade ID)"
       - name: VERSION
         description: "Parsed version number (may be null if unparseable)"
-      - name: RAW_VERSION
-        description: "Original version as loaded"
-      - name: RAW_COUNTERPARTY
-        description: "Original counterparty as loaded"
-      - name: RAW_NOTIONAL
-        description: "Original notional as loaded"
-      - name: RAW_CURRENCY
-        description: "Original currency as loaded"
-      - name: RAW_MATURITY_DATE
-        description: "Original maturity date as loaded"
-      - name: RAW_EXECUTION_DATE
-        description: "Original execution date as loaded"
+      - name: COUNTERPARTY
+        description: "Parsed counterparty"
+      - name: NOTIONAL
+        description: "Parsed notional"
+      - name: CURRENCY
+        description: "Parsed currency"
+      - name: MATURITY_DATE
+        description: "Parsed maturity date"
+      - name: EXECUTION_DATE
+        description: "Parsed execution date"
       - name: ETL_DATE
         description: "The etl_date batch this row was processed for"
       - name: SOURCE_FILENAME
         description: "Source filename from the raw layer"
       - name: ROW_ID
         description: "Source row number from the raw layer"
-        description: "dbt invocation/run identifier for lineage"
       - name: LAST_UPDATED_DATE
         description: "Timestamp of last quarantine write"

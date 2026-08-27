@@ -1,6 +1,6 @@
 # Trade Data ETL Pipeline
 
-Cloud-native ETL pipeline for daily trade data ingestion, validation, and reporting using Snowflake, dbt, Airflow, and Terraform.
+Cloud-native ETL pipeline for daily trade data ingestion, validation, reporting, and access control using Snowflake, dbt, Airflow, Terraform, and GitHub Actions.
 
 ---
 
@@ -14,20 +14,35 @@ View the live dbt docs: [dbt Docs](https://ranganathhittanagi.github.io/dws_data
 
 ![Architecture Diagram](docs/architecture_diagram.png)
 
+The pipeline is deployed on AWS EC2 and orchestrated by Apache Airflow:
+
+1. **GitHub Actions** runs `.github/workflows/dbt-ci.yml` (`dbt deps`, `dbt parse`, `dbt docs generate`) on every PR to `master` and before any deploy.
+2. On a push to `master`, `.github/workflows/deploy.yml` first runs the dbt CI job, then deploys the latest code to the `airflow-control` and `dev-ec2-instance` EC2 nodes via SSM Run Command.
+3. The EC2 instances bootstrap themselves: they install Docker, clone the repo, fetch runtime secrets from AWS SSM Parameter Store, and start the Airflow stack.
+4. Airflow DAGs orchestrate the daily workflow:
+   - `trades_raw_etl_dag` waits for a CSV trade file in S3 and runs the dbt raw layer.
+   - `trades_transform_etl_dag` cleans, parses, and validates records in the dbt transform layer.
+   - `trades_datawarehouse_etl_dag` publishes `valid_trades`, `rejected_trades`, and post-publication audit models.
+   - `trades_stream_etl_dag` ingests streaming trade files via Snowpipe.
+5. Snowflake stores all trade data across `RAW_DB`, `TRANSFORM_DB`, `DATAWAREHOUSE_DB`, and `COMPLIANCE_DB`.
+6. dbt applies Snowflake access controls: dynamic data masking on `COUNTERPARTY` and `NOTIONAL`, and a row access policy on `CURRENCY` driven by a `currency_entitlements` seed.
+7. Streamlit dashboards run natively inside Snowsight, and SNS delivers pipeline and infrastructure alerts.
+
 ---
 
 ## Tech Stack Choices
 
 | Technology | Purpose |
 |---|---|
-| **Snowflake** | Cloud data warehouse with native stages, `COPY INTO`, and Streamlit apps — zero infrastructure management |
-| **Terraform** | Infrastructure as code for provisioning databases, schemas, roles, users, stages, and grants reproducibly |
-| **dbt** | SQL-based transformations with incremental materializations, built-in testing, and custom `copy_into_table` materialization for raw data loading |
-| **Apache Airflow** | Orchestrates the pipeline (file sensing → upload → dbt run → dbt test) with retries, timeouts, and email alerts |
+| **Snowflake** | Cloud data warehouse with native stages, `COPY INTO`, dynamic data masking, row access policies, and Streamlit apps |
+| **Terraform** | Infrastructure as code for provisioning databases, schemas, roles, users, EC2 instances, IAM roles, S3 buckets, stages, and grants reproducibly |
+| **dbt** | SQL-based transformations with incremental materializations, built-in testing, custom `copy_into_table` materialization, and access-control macros |
+| **Apache Airflow** | Orchestrates the pipeline (file sensing → dbt run → dbt test) with CeleryExecutor, retries, timeouts, and SNS alerts |
 | **Docker** | Containerizes Airflow and all dependencies for consistent local development and deployment |
-| **GitHub Actions** | CI pipelines validate dbt models and Terraform code on every push/PR to `master` |
-| **Streamlit in Snowflake** | Serverless dashboard running natively inside Snowflake using Snowpark — no external hosting needed |
-| **RSA key-pair auth** | Secure, non-interactive Snowflake access across all components (no passwords stored) |
+| **GitHub Actions** | `dbt-ci.yml` validates dbt on PRs and before deploy; `deploy.yml` deploys to EC2 after CI passes |
+| **Streamlit in Snowflake** | Serverless dashboard running natively inside Snowflake using Snowpark |
+| **AWS SSM Parameter Store** | Stores Snowflake RSA keys and Airflow runtime secrets; nothing sensitive is committed |
+| **RSA key-pair auth** | Secure, non-interactive Snowflake access across all components |
 
 ---
 
@@ -47,7 +62,7 @@ View the live dbt docs: [dbt Docs](https://ranganathhittanagi.github.io/dws_data
 - `MATURITY_DATE` is **NULL** or unparseable → `INVALID_MATURITY_DATE`
 - `MATURITY_DATE` is **earlier than** `EXECUTION_DATE` → `MATURITY_BEFORE_EXECUTION`
 - Incoming `VERSION` is **lower than** the version already stored → `STALE_VERSION`
-- All rejected records are stored with `(TRADE_ID, VERSION)` as composite key
+- All rejected records are stored with `(SOURCE_TYPE, ROW_ID, RULE_ID, ETL_DATE)` as the composite key
 
 ---
 
@@ -55,77 +70,76 @@ View the live dbt docs: [dbt Docs](https://ranganathhittanagi.github.io/dws_data
 
 ### Prerequisites
 
-- Docker Desktop installed locally
-- Terraform (>= 1.5.0) installed locally
-- A Snowflake account with `ACCOUNTADMIN` access
-- Git installed
-- A Gmail account (for Airflow email alerting)
+- AWS account with an IAM user/role that can create EC2, VPC, IAM, S3, SSM, CloudWatch, SNS, and DLM resources.
+- Snowflake account with `ACCOUNTADMIN` access.
+- Terraform >= 1.5.0, AWS CLI, and Git installed on the deployment host.
+- An SSH key pair if you want SSH access to the EC2 instance (SSM access works without one).
+- Docker Desktop (only needed for local development).
 
-### Step 1: Clone the repository
+---
+
+### A. Deploy to AWS EC2 (recommended)
+
+This path provisions the full stack — Snowflake resources, S3 buckets, VPC, EC2 instances, IAM roles, and Airflow secrets — from a single Terraform run. The EC2 instances then self-configure via user-data.
+
+#### 1. Clone the repository
 
 ```bash
 git clone https://github.com/ranganathhittanagi/dws_dataengineering_casestudy.git
 cd dws_dataengineering_casestudy
 ```
 
-### Step 2: Generate RSA key pair
+#### 2. Prepare RSA keys and SSM parameters
 
-Generate a key pair for Snowflake key-pair authentication and store it in the `secrets/` folder.
-
-> **Note:** In production, store secrets in a secure vault (HashiCorp Vault, AWS Secrets Manager, etc.). Never commit the `secrets/` folder to version control.
+Authentication uses key-pair auth. Generate the service-user key pair and the Terraform admin key, then store them in SSM Parameter Store.
 
 ```bash
-mkdir -p secrets
+# Service user key pair (used by dbt / Airflow at runtime)
+openssl genrsa 2048 | openssl pkcs8 -topk8 -inform PEM -out /tmp/dws_service_user.p8 -nocrypt
+openssl rsa -in /tmp/dws_service_user.p8 -pubout -out /tmp/dws_service_user.pub
 
-# Generate private key (PKCS#8 format, no passphrase)
-openssl genrsa 2048 | openssl pkcs8 -topk8 -inform PEM -out secrets/rsa_key.p8 -nocrypt
+aws ssm put-parameter --name /dws/snowflake/dws-service-user/private_key \
+  --type SecureString --value file:///tmp/dws_service_user.p8 --overwrite
+aws ssm put-parameter --name /dws/snowflake/dws-service-user/public_key \
+  --type SecureString --value file:///tmp/dws_service_user.pub --overwrite
 
-# Extract public key
-openssl rsa -in secrets/rsa_key.p8 -pubout -out secrets/rsa_key.pub
+# Terraform admin key (must belong to a Snowflake user with ACCOUNTADMIN privileges)
+openssl genrsa 2048 | openssl pkcs8 -topk8 -inform PEM -out /tmp/dws_admin.p8 -nocrypt
+aws ssm put-parameter --name /dws/snowflake/admin/private_key \
+  --type SecureString --value file:///tmp/dws_admin.p8 --overwrite
 ```
 
-Assign the public key to the Snowflake user (login as `ACCOUNTADMIN`):
+#### 3. Configure Terraform variables
 
-```sql
-ALTER USER DWS_SERVICE_USER SET RSA_PUBLIC_KEY='<paste key without header/footer>';
+Create `terraform/terraform.tfvars`. This file is gitignored so it will never be committed.
+
+```hcl
+repo_url                = "https://github.com/ranganathhittanagi/dws_dataengineering_casestudy.git"
+alert_emails            = ["you@example.com"]
+snowflake_user          = "YOUR_SNOWFLAKE_ADMIN_USER"
+dev_ssh_public_key_path = "~/.ssh/dws-dev-ec2.pub"
 ```
 
-To get the key content without headers:
+Review `terraform/variables.tf` for additional overrides such as `aws_region`, database/schema names, and EC2 instance types.
+
+#### 4. Configure `.env`
+
+Edit the project root `.env` with your account-specific, non-sensitive values:
 
 ```bash
-grep -v "BEGIN\|END" secrets/rsa_key.pub | tr -d '\n'
-```
-
-### Step 3: Configure environment variables
-
-Edit the `.env` file in the project root:
-
-```
-SNOWFLAKE_ACCOUNT=<your_snowflake_account_identifier>
+SNOWFLAKE_ACCOUNT=YTQEMJI-TW17096
 SNOWFLAKE_USER=DWS_SERVICE_USER
 SNOWFLAKE_ROLE=DWS_SERVICE_ROLE
 SNOWFLAKE_WAREHOUSE=COMPUTE_WH
-SNOWFLAKE_PRIVATE_KEY_PATH=/opt/home/secrets/rsa_key.p8
-TRADE_DATA_DIR=data/raw
+AWS_REGION=ap-south-1
+S3_BUCKET=trades-source-dws
+S3_PREFIX=raw/trades
+SNOWFLAKE_PARAM_PATH=/dws/snowflake/dws-service-user
 ```
 
-**SNS email alerting setup (for Airflow failure alerts):**
+`deploy/fetch_runtime_env.sh` will pull the non-sensitive `SNOWFLAKE_*` and `S3_*` values from this file on each EC2 deploy. The private key is always fetched from SSM, never from `.env`.
 
-Failure alerts publish to an AWS SNS topic (managed in `terraform/sns.tf`) that fans out
-to email subscribers - no SMTP credentials required.
-
-1. Set your alert address in `terraform/terraform.tfvars`: `alert_emails = ["you@example.com"]`
-2. After `terraform apply`, AWS sends a one-time **"Subscription Confirmation"** email -
-   click the confirm link (alerts are not delivered until confirmed).
-3. For local runs, copy the topic ARN into `.env`:
-
-```
-SNS_ALERT_TOPIC_ARN=<value of `terraform output sns_alert_topic_arn`>
-```
-
-On EC2 the topic ARN is fetched from SSM Parameter Store automatically.
-
-### Step 4: Provision Snowflake infrastructure with Terraform
+#### 5. Provision with Terraform
 
 ```bash
 cd terraform
@@ -135,91 +149,99 @@ terraform apply -auto-approve
 cd ..
 ```
 
-This creates databases (`RAW_DB`, `TRANSFORM_DB`, `DATAWAREHOUSE_DB`, `COMPLIANCE_DB`), schemas, roles, users, warehouse, internal stage, file format, and all grants.
+This creates:
+- Snowflake databases, schemas, warehouse, roles, users, file formats, stages, and storage integrations.
+- S3 buckets for batch and streaming trade files.
+- VPC, subnets, security groups, and Application Load Balancer.
+- `airflow-control` EC2 instance (Postgres/Redis/Airflow webserver/scheduler/worker) and `dev-ec2-instance` (ad-hoc shell).
+- IAM instance profiles so the EC2 nodes can read SSM, S3, and CloudWatch without static AWS credentials.
+- SNS topic for alerts and SSM parameters for Airflow secrets.
 
-### Step 5: Start Docker containers
+Both instances automatically clone the repo, run `deploy/fetch_runtime_env.sh`, and start the Docker Compose stack.
 
-```bash
-docker compose up --build -d
-```
-
-Wait ~1-2 minutes for services to initialize, then verify:
-
-```bash
-# Check container is running
-docker ps
-
-# Verify dbt can connect to Snowflake
-docker exec -it dws_etl_service_container bash -c "cd /opt/home/dbt && /opt/home/dbt_venv/bin/dbt debug"
-```
-
-Open http://localhost:8080 — login with **admin / admin**.
-
-### Step 6: Generate and load sample trade data
+#### 6. Access Airflow
 
 ```bash
-# Connect to the container
-docker exec -it dws_etl_service_container bash
+# Airflow URL
+terraform output airflow_url
 
-# Generate sample trades file for a specific date
-python3 src/ingestion/generate_trades_data.py --date 2026-08-15
-
-# Upload the generated file to Snowflake internal stage
-python3 src/ingestion/load_to_snowflake.py
-
-exit
+# Initial admin password (also stored in SSM)
+aws ssm get-parameter --name /dws/airflow/webserver_admin_password \
+  --with-decryption --query Parameter.Value --output text
 ```
 
-### Step 7: Trigger the Airflow DAG
+Open the Airflow URL in a browser and log in as `admin` with the retrieved password.
 
-1. Open http://localhost:8080
-2. Find `trade_pipeline_dag`
-3. Unpause the DAG (toggle switch)
-4. Click **Play** → **Trigger DAG**
-5. The DAG executes: **sense file → upload to Snowflake → dbt run → dbt test**
+#### 7. Run the DAGs
 
-### Step 8: Verify data in Snowflake
+Generate and upload a sample trade file:
 
-Login to Snowflake UI (Snowsight) and run:
+```bash
+python src/util_scripts/generate_trades_data.py --date 2026-08-15 --rows 100
+aws s3 cp data/trades_2026-08-15.csv s3://${S3_BUCKET}/${S3_PREFIX}/trades_2026-08-15.csv
+```
+
+In the Airflow UI:
+1. Unpause `trades_raw_etl_dag`, `trades_transform_etl_dag`, and `trades_datawarehouse_etl_dag`.
+2. Trigger `trades_raw_etl_dag` for `2026-08-15`.
+3. After it succeeds, trigger `trades_transform_etl_dag` and `trades_datawarehouse_etl_dag` for the same date.
+
+The streaming DAG (`trades_stream_etl_dag`) runs automatically when files land in the streaming S3 bucket.
+
+#### 8. Verify data and access controls in Snowflake
 
 ```sql
 SELECT * FROM DATAWAREHOUSE_DB.DATAWAREHOUSE_SCHEMA.VALID_TRADES;
 SELECT * FROM COMPLIANCE_DB.COMPLIANCE_SCHEMA.REJECTED_TRADES;
+
+SHOW MASKING POLICIES IN COMPLIANCE_DB.ACCESS_CONTROL;
+SHOW ROW ACCESS POLICIES IN COMPLIANCE_DB.ACCESS_CONTROL;
 ```
 
-### Step 9: View Streamlit dashboard
+---
 
-1. In Snowsight → **Streamlit** → **+ Streamlit App**
-2. Set database: `RAW_DB`, schema: `RAW_SCHEMA`, warehouse: `COMPUTE_WH`
-3. Paste the contents of `streamlit_app_snowflake.py` into the editor
-4. Click **Run** — the dashboard displays Active, Expired, and Rejected trade metrics with a bar chart
+### Troubleshooting
 
-### Step 10: CI/CD with GitHub Actions
+- If `terraform apply` fails because the `EC2ActionsAccess` IAM role already exists, import it first:
+  ```bash
+  terraform import aws_iam_role.ec2_actions EC2ActionsAccess
+  ```
+- If Airflow tasks fail to connect to Snowflake, check that the SSM parameters exist and that `deploy/fetch_runtime_env.sh` ran during bootstrap. View the log on the instance:
+  ```bash
+  aws ssm start-session --target $(terraform output -raw control_instance_id)
+  sudo tail -n 200 /var/log/bootstrap.log
+  ```
+- To run ad-hoc dbt commands, connect to the dev instance and use the container:
+  ```bash
+  docker compose -f deploy/docker-compose.dev.yml exec dev-shell /usr/local/bin/dbt --version
+  ```
 
-Any push or PR to `master` automatically triggers:
+---
 
-- **dbt CI** (`dbt-ci.yml`) — runs `dbt deps`, `dbt parse`, `dbt compile`, `dbt test`
-- **Terraform CI** (`terraform-ci.yml`) — runs `terraform fmt -check`, `terraform init`, `terraform validate`, `terraform plan`
+## CI/CD with GitHub Actions
 
-No `terraform apply` runs in CI — infrastructure changes are applied manually (Step 4).
+Two workflows drive the repo:
 
-**Required GitHub Secrets** (Settings → Secrets → Actions):
+- **`.github/workflows/dbt-ci.yml`**: Runs on PRs to `master` and as a reusable workflow. It installs `dbt-snowflake`, loads non-sensitive settings from `.env`, fetches the Snowflake private key from SSM, and runs `dbt deps`, `dbt parse`, and `dbt docs generate`.
+- **`.github/workflows/deploy.yml`**: Triggered on pushes to `master`. It runs the dbt CI job first; only if CI succeeds does it start the EC2 instances and deploy the latest code via SSM Run Command.
+
+**Required GitHub secrets** (Settings → Secrets → Actions):
 
 | Secret | Value |
 |---|---|
-| `SNOWFLAKE_ACCOUNT` | Snowflake account identifier |
-| `SNOWFLAKE_USER` | `DWS_SERVICE_USER` |
-| `SNOWFLAKE_ROLE` | `DWS_SERVICE_ROLE` |
-| `SNOWFLAKE_WAREHOUSE` | `COMPUTE_WH` |
-| `SNOWFLAKE_PRIVATE_KEY_B64` | Base64-encoded private key: `base64 -w 0 secrets/rsa_key.p8` |
+| `AWS_ACCESS_KEY_ID` | IAM user access key with EC2, SSM, SNS, and CloudWatch permissions |
+| `AWS_SECRET_ACCESS_KEY` | Corresponding secret key |
+
+Snowflake credentials are fetched from SSM during CI, so no Snowflake secrets need to be stored in GitHub.
 
 ---
 
 ## Verification Checks
 
-- `terraform show` — lists created Snowflake resources
-- `docker compose ps` — all services healthy
-- `dbt debug` — reports `Connection test: OK`
-- Snowflake console shows `TRADES` table under `RAW_DB.RAW_SCHEMA`
-- Airflow DAG completes all tasks (green)
-- No passwords stored in `.env` or committed to git
+- `terraform plan` and `terraform apply` complete without errors.
+- `terraform output airflow_url` returns the Airflow web URL.
+- `aws ssm start-session --target $(terraform output -raw control_instance_id)` connects to the control node.
+- Airflow DAGs complete all tasks (green).
+- Snowflake shows `VALID_TRADES`, `REJECTED_TRADES`, and access-control policies under `COMPLIANCE_DB.ACCESS_CONTROL`.
+- `dbt debug` reports `Connection test: OK` when run inside the container.
+- No passwords or private keys are committed to git.

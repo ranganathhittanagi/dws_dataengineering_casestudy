@@ -9,7 +9,7 @@ from airflow.operators.empty import EmptyOperator
 from airflow.operators.python import PythonOperator
 from airflow.providers.amazon.aws.sensors.s3 import S3KeySensor
 
-from src.alerting import notify_failure
+from common import default_dag_args, sensor_defaults
 from src.dbt_runner import run_dbt
 
 S3_BUCKET = os.getenv("S3_BUCKET", "trades-source-dws")
@@ -20,11 +20,7 @@ AWS_CONN_ID = os.getenv("AWS_CONN_ID", "aws_default")
 with DAG(
     dag_id="trades_raw_etl_dag",
     description="Ingest daily trade files from S3 and run raw quality checks.",
-    default_args={
-        "owner": "data-engineering",
-        "on_failure_callback": notify_failure,
-        "retries": 0,
-    },
+    default_args=default_dag_args(),
     schedule="@daily",
     start_date=datetime(2026, 8, 1),
     catchup=False,
@@ -37,9 +33,7 @@ with DAG(
         bucket_name=S3_BUCKET,
         bucket_key=f"{S3_PREFIX}/trades_{{{{ ds }}}}.csv",
         aws_conn_id=AWS_CONN_ID,
-        poke_interval=60,
-        timeout=30 * 60,
-        mode="reschedule",
+        **sensor_defaults(),
         soft_fail=False,
     )
 

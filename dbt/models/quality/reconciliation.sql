@@ -9,12 +9,12 @@
 
 with batch_raw_count as (
     select count(*) as cnt from {{ ref('trades') }}
-    where ETL_DATE between '{{ late_arrival_date }}' and '{{ etl_date }}'
+    where {{ batch_window_filter(etl_date, late_arrival_date) }}
 ),
 
 stream_raw_count as (
     select count(*) as cnt from {{ source('raw', 'trades_stream') }}
-    where TO_VARCHAR(LOAD_TIMESTAMP, 'YYYY-MM-DD') between '{{ late_arrival_date }}' and '{{ etl_date }}'
+    where {{ stream_window_filter(etl_date, late_arrival_date) }}
 ),
 
 raw_count as (
@@ -25,13 +25,13 @@ raw_count as (
 
 valid_count as (
     select count(*) as cnt from {{ ref('valid_trades') }}
-    where ETL_DATE between '{{ late_arrival_date }}' and '{{ etl_date }}'
+    where {{ batch_window_filter(etl_date, late_arrival_date) }}
 ),
 
 quarantine_distinct as (
     select count(distinct SOURCE_TYPE || '~' || ROW_ID || '~' || ETL_DATE) as cnt
     from {{ ref('rejected_trades') }}
-    where ETL_DATE between '{{ late_arrival_date }}' and '{{ etl_date }}'
+    where {{ batch_window_filter(etl_date, late_arrival_date) }}
 )
 
 select

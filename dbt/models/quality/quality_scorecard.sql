@@ -14,7 +14,7 @@ with rule_totals as (
         RULE_NAME,
         count(*) as failure_count
     from {{ ref('rejected_trades') }}
-    where ETL_DATE between '{{ late_arrival_date }}' and '{{ etl_date }}'
+    where {{ batch_window_filter(etl_date, late_arrival_date) }}
     group by RULE_ID, RULE_NAME
 
 ),
@@ -25,12 +25,12 @@ catalog as (
 
 batch_raw_count as (
     select count(*) as cnt from {{ ref('trades') }}
-    where ETL_DATE between '{{ late_arrival_date }}' and '{{ etl_date }}'
+    where {{ batch_window_filter(etl_date, late_arrival_date) }}
 ),
 
 stream_raw_count as (
     select count(*) as cnt from {{ source('raw', 'trades_stream') }}
-    where TO_VARCHAR(LOAD_TIMESTAMP, 'YYYY-MM-DD') between '{{ late_arrival_date }}' and '{{ etl_date }}'
+    where {{ stream_window_filter(etl_date, late_arrival_date) }}
 ),
 
 raw_count as (

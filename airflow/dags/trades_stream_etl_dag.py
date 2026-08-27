@@ -10,19 +10,14 @@ from airflow import DAG
 from airflow.operators.empty import EmptyOperator
 from airflow.operators.python import PythonOperator
 
-from src.alerting import notify_failure
+from common import default_dag_args
 from src.dbt_runner import run_dbt
 
 
 with DAG(
     dag_id="trades_stream_etl_dag",
     description="Process streaming trades from Snowpipe into VALID_TRADES.",
-    default_args={
-        "owner": "data-engineering",
-        "on_failure_callback": notify_failure,
-        "retries": 1,
-        "retry_delay": timedelta(minutes=2),
-    },
+    default_args=default_dag_args(retries=1, retry_delay=timedelta(minutes=2)),
     schedule=timedelta(minutes=5),
     start_date=datetime(2026, 8, 1),
     catchup=False,

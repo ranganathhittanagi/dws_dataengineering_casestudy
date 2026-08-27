@@ -8,7 +8,7 @@
 {%- set source_dates = source_window_dates('trades', etl_date) -%}
 {%- set late_arrival_date = source_dates[-1] -%}
 
-{%- set approved_currencies = ["'USD'","'EUR'","'GBP'","'JPY'","'AUD'","'CAD'","'CHF'"] -%}
+{%- set approved_currencies = var('approved_currencies') -%}
 
 with raw_trades as (
 

@@ -67,7 +67,7 @@ def notify_success(context: dict) -> None:
 
     dag_id = getattr(context.get("dag"), "dag_id", "unknown")
     execution_date = context.get("ds", "unknown")
-    run_id = getattr(context.get("run_id"), "run_id", "unknown")
+    run_id = context.get("run_id", "unknown")
 
     subject = f"[Airflow] {dag_id} passed ({execution_date})"[:SNS_SUBJECT_MAX_LEN]
     message = (

@@ -15,7 +15,7 @@ with control_totals as (
         '{{ etl_date }}'::VARCHAR as etl_date,
         count(*) as row_count
     from {{ ref('trades') }}
-    where ETL_DATE between '{{ late_arrival_date }}' and '{{ etl_date }}'
+    where {{ batch_window_filter(etl_date, late_arrival_date) }}
 
     union all
 
@@ -25,7 +25,7 @@ with control_totals as (
         '{{ etl_date }}'::VARCHAR as etl_date,
         count(*) as row_count
     from {{ ref('stg_trades') }}
-    where ETL_DATE between '{{ late_arrival_date }}' and '{{ etl_date }}'
+    where {{ batch_window_filter(etl_date, late_arrival_date) }}
 
     union all
 
@@ -35,7 +35,7 @@ with control_totals as (
         '{{ etl_date }}'::VARCHAR as etl_date,
         count(*) as row_count
     from {{ source('raw', 'trades_stream') }}
-    where TO_VARCHAR(LOAD_TIMESTAMP, 'YYYY-MM-DD') between '{{ late_arrival_date }}' and '{{ etl_date }}'
+    where {{ stream_window_filter(etl_date, late_arrival_date) }}
 
     union all
 
@@ -45,7 +45,7 @@ with control_totals as (
         '{{ etl_date }}'::VARCHAR as etl_date,
         count(*) as row_count
     from {{ ref('stg_trades_stream') }}
-    where ETL_DATE between '{{ late_arrival_date }}' and '{{ etl_date }}'
+    where {{ batch_window_filter(etl_date, late_arrival_date) }}
 
     union all
 
@@ -55,7 +55,7 @@ with control_totals as (
         '{{ etl_date }}'::VARCHAR as etl_date,
         count(*) as row_count
     from {{ ref('rejected_trades') }}
-    where ETL_DATE between '{{ late_arrival_date }}' and '{{ etl_date }}'
+    where {{ batch_window_filter(etl_date, late_arrival_date) }}
 
     union all
 
@@ -65,7 +65,7 @@ with control_totals as (
         '{{ etl_date }}'::VARCHAR as etl_date,
         count(*) as row_count
     from {{ ref('valid_trades') }}
-    where ETL_DATE between '{{ late_arrival_date }}' and '{{ etl_date }}'
+    where {{ batch_window_filter(etl_date, late_arrival_date) }}
 
 )
 

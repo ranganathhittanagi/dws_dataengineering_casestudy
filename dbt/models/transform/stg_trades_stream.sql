@@ -5,7 +5,7 @@
     tags=['streaming', 'prepare_quality']
 ) }}
 
-{%- set approved_currencies = ["'USD'","'EUR'","'GBP'","'JPY'","'AUD'","'CAD'","'CHF'"] -%}
+{%- set approved_currencies = var('approved_currencies') -%}
 
 with raw_stream as (
 
@@ -68,7 +68,7 @@ final as (
         MATURITY_DATE,
         EXECUTION_DATE,
         ROW_ID,
-        TO_VARCHAR(LOAD_TIMESTAMP, 'YYYY-MM-DD') as ETL_DATE,
+        {{ date_string('LOAD_TIMESTAMP') }} as ETL_DATE,
         LOAD_TIMESTAMP,
         LAST_UPDATED_DATE,
         IS_TRADE_ID_VALID,

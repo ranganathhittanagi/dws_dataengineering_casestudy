@@ -19,6 +19,8 @@ clean-targets:
 
 vars:
   dq_observability_schema: "DQ_OBSERVABILITY"
+  approved_currencies: ["'USD'", "'EUR'", "'GBP'", "'JPY'", "'AUD'", "'CAD'", "'CHF'"]
+  date_format: 'YYYY-MM-DD'
   source_windows:
     trades:
       late_arrival_days: 1

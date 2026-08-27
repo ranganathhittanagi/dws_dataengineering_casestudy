@@ -11,18 +11,14 @@ from airflow.operators.python import PythonOperator
 from airflow.sensors.external_task import ExternalTaskSensor
 from airflow.utils.state import State
 
-from src.alerting import notify_failure
+from common import default_dag_args, sensor_defaults
 from src.dbt_runner import run_dbt
 
 
 with DAG(
     dag_id="trades_transform_etl_dag",
     description="Transform and validate raw trades, then emit transform dataset.",
-    default_args={
-        "owner": "data-engineering",
-        "on_failure_callback": notify_failure,
-        "retries": 0,
-    },
+    default_args=default_dag_args(),
     schedule="@daily",
     start_date=datetime(2026, 8, 1),
     catchup=False,
@@ -36,9 +32,7 @@ with DAG(
         external_task_id="emit_raw_dataset",
         allowed_states=[State.SUCCESS],
         execution_delta=timedelta(days=0),
-        poke_interval=60,
-        timeout=30 * 60,
-        mode="reschedule",
+        **sensor_defaults(),
     )
 
     trades_transform = PythonOperator(

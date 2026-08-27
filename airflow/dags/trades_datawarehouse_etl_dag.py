@@ -12,9 +12,9 @@ from airflow import DAG
 from airflow.exceptions import AirflowException
 from airflow.operators.python import PythonOperator
 from airflow.sensors.external_task import ExternalTaskSensor
-from airflow.utils.state import State
 
-from src.alerting import notify_failure, notify_success
+from common import TASK_SUCCESS, default_dag_args, sensor_defaults
+from src.alerting import notify_success
 from src.dbt_runner import run_dbt
 
 
@@ -26,7 +26,7 @@ def _build_scorecard_and_send_notification(**context):
     failed_tasks = []
     for task_id in ("trades_warehouse_dq_check", "post_publish_dq_check"):
         ti = dag_run.get_task_instance(task_id)
-        if ti and ti.state == State.FAILED:
+        if ti and ti.state != TASK_SUCCESS:
             failed_tasks.append(task_id)
 
     if failed_tasks:
@@ -42,11 +42,7 @@ def _build_scorecard_and_send_notification(**context):
 with DAG(
     dag_id="trades_datawarehouse_etl_dag",
     description="Build warehouse candidates, quality-gate, publish and audit.",
-    default_args={
-        "owner": "data-engineering",
-        "on_failure_callback": notify_failure,
-        "retries": 0,
-    },
+    default_args=default_dag_args(),
     schedule="@daily",
     start_date=datetime(2026, 8, 1),
     catchup=False,
@@ -58,11 +54,9 @@ with DAG(
         task_id="input_transform_dataset_sensor",
         external_dag_id="trades_transform_etl_dag",
         external_task_id="emit_transform_dataset",
-        allowed_states=[State.SUCCESS],
+        allowed_states=[TASK_SUCCESS],
         execution_delta=timedelta(days=0),
-        poke_interval=60,
-        timeout=30 * 60,
-        mode="reschedule",
+        **sensor_defaults(),
     )
 
     trades_warehouse = PythonOperator(

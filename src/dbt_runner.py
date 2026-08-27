@@ -3,13 +3,16 @@
 This keeps the dbt invocation logic in one place so the layer-specific DAGs
 only declare the subcommand and selector for each stage.
 """
+import logging
 import os
 import subprocess
 
 from src.config import dbt_environment
 
-DBT_PROJECT_DIR = "/opt/home/dbt"
-DBT_BIN = ["/opt/home/dbt_venv/bin/python", "-I", "/opt/home/dbt_venv/bin/dbt"]
+logger = logging.getLogger(__name__)
+
+DBT_PROJECT_DIR = os.getenv("DBT_PROJECT_DIR", "/opt/home/dbt")
+DBT_BIN = os.getenv("DBT_BIN", "/opt/home/dbt_venv/bin/python -I /opt/home/dbt_venv/bin/dbt").split()
 
 
 def run_dbt(subcommand: str, selector: str, full_refresh: bool = False, **context):
@@ -29,9 +32,9 @@ def run_dbt(subcommand: str, selector: str, full_refresh: bool = False, **contex
         text=True,
     )
     if result.stdout:
-        print(result.stdout)
+        logger.info("dbt stdout:\n%s", result.stdout)
     if result.stderr:
-        print(result.stderr)
+        logger.warning("dbt stderr:\n%s", result.stderr)
     if result.returncode != 0:
         raise RuntimeError(
             f"dbt {subcommand} --select {selector} failed with exit code {result.returncode}\n"

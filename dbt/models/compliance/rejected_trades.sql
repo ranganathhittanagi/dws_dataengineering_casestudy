@@ -72,120 +72,66 @@ existing_valid as (
 
 invalid_trade_id as (
     select
-        'RULE_TRN_001' as RULE_ID,
-        'TRADE_ID missing or empty' as RULE_NAME,
-        SOURCE_TYPE,
-        'Trade ID must be a non-empty string after trim' as REJECTION_REASON,
-        TRADE_ID,
-        VERSION,
-        COUNTERPARTY,
-        NOTIONAL,
-        CURRENCY,
-        MATURITY_DATE,
-        EXECUTION_DATE,
-        ETL_DATE,
-        ROW_ID,
-        CURRENT_TIMESTAMP()::TIMESTAMP_NTZ as LAST_UPDATED_DATE
+        {{ rejection_base_columns(
+            'RULE_TRN_001',
+            'TRADE_ID missing or empty',
+            'Trade ID must be a non-empty string after trim'
+        ) }}
     from staged
     where not IS_TRADE_ID_VALID
 ),
 
 invalid_version as (
     select
-        'RULE_TRN_002' as RULE_ID,
-        'VERSION unparseable or negative' as RULE_NAME,
-        SOURCE_TYPE,
-        'VERSION must parse as a non-negative integer' as REJECTION_REASON,
-        TRADE_ID,
-        VERSION,
-        COUNTERPARTY,
-        NOTIONAL,
-        CURRENCY,
-        MATURITY_DATE,
-        EXECUTION_DATE,
-        ETL_DATE,
-        ROW_ID,
-        CURRENT_TIMESTAMP()::TIMESTAMP_NTZ as LAST_UPDATED_DATE
+        {{ rejection_base_columns(
+            'RULE_TRN_002',
+            'VERSION unparseable or negative',
+            'VERSION must parse as a non-negative integer'
+        ) }}
     from staged
     where not IS_VERSION_VALID
 ),
 
 invalid_notional as (
     select
-        'RULE_TRN_003' as RULE_ID,
-        'NOTIONAL unparseable or not positive' as RULE_NAME,
-        SOURCE_TYPE,
-        'NOTIONAL must parse as a positive number' as REJECTION_REASON,
-        TRADE_ID,
-        VERSION,
-        COUNTERPARTY,
-        NOTIONAL,
-        CURRENCY,
-        MATURITY_DATE,
-        EXECUTION_DATE,
-        ETL_DATE,
-        ROW_ID,
-        CURRENT_TIMESTAMP()::TIMESTAMP_NTZ as LAST_UPDATED_DATE
+        {{ rejection_base_columns(
+            'RULE_TRN_003',
+            'NOTIONAL unparseable or not positive',
+            'NOTIONAL must parse as a positive number'
+        ) }}
     from staged
     where not IS_NOTIONAL_VALID
 ),
 
 invalid_currency as (
     select
-        'RULE_TRN_004' as RULE_ID,
-        'CURRENCY not in approved domain' as RULE_NAME,
-        SOURCE_TYPE,
-        'CURRENCY must belong to the accepted ISO domain' as REJECTION_REASON,
-        TRADE_ID,
-        VERSION,
-        COUNTERPARTY,
-        NOTIONAL,
-        CURRENCY,
-        MATURITY_DATE,
-        EXECUTION_DATE,
-        ETL_DATE,
-        ROW_ID,
-        CURRENT_TIMESTAMP()::TIMESTAMP_NTZ as LAST_UPDATED_DATE
+        {{ rejection_base_columns(
+            'RULE_TRN_004',
+            'CURRENCY not in approved domain',
+            'CURRENCY must belong to the accepted ISO domain'
+        ) }}
     from staged
     where not IS_CURRENCY_VALID
 ),
 
 invalid_maturity as (
     select
-        'RULE_TRN_005' as RULE_ID,
-        'MATURITY_DATE unparseable' as RULE_NAME,
-        SOURCE_TYPE,
-        'MATURITY_DATE must parse as a valid date' as REJECTION_REASON,
-        TRADE_ID,
-        VERSION,
-        COUNTERPARTY,
-        NOTIONAL,
-        CURRENCY,
-        MATURITY_DATE,
-        EXECUTION_DATE,
-        ETL_DATE,
-        ROW_ID,
-        CURRENT_TIMESTAMP()::TIMESTAMP_NTZ as LAST_UPDATED_DATE
+        {{ rejection_base_columns(
+            'RULE_TRN_005',
+            'MATURITY_DATE unparseable',
+            'MATURITY_DATE must parse as a valid date'
+        ) }}
     from staged
     where not IS_MATURITY_VALID
 ),
 
 invalid_execution as (
     select
-        'RULE_TRN_006' as RULE_ID,
-        'EXECUTION_DATE unparseable' as RULE_NAME,
-        SOURCE_TYPE,
-        'EXECUTION_DATE must parse as a valid date' as REJECTION_REASON,
-        TRADE_ID,
-        VERSION,
-        COUNTERPARTY,
-        NOTIONAL,
-        CURRENCY,
-        MATURITY_DATE,
-        EXECUTION_DATE,
-        ETL_DATE,
-        ROW_ID,
-        CURRENT_TIMESTAMP()::TIMESTAMP_NTZ as LAST_UPDATED_DATE
+        {{ rejection_base_columns(
+            'RULE_TRN_006',
+            'EXECUTION_DATE unparseable',
+            'EXECUTION_DATE must parse as a valid date'
+        ) }}
     from staged
     where not IS_EXECUTION_VALID
 ),
@@ -212,20 +158,11 @@ maturity_before_execution as (
 
 expired_maturity as (
     select
-        'RULE_TRN_008' as RULE_ID,
-        'MATURITY_DATE in the past' as RULE_NAME,
-        SOURCE_TYPE,
-        'MATURITY_DATE must be today or in the future' as REJECTION_REASON,
-        TRADE_ID,
-        VERSION,
-        COUNTERPARTY,
-        NOTIONAL,
-        CURRENCY,
-        MATURITY_DATE,
-        EXECUTION_DATE,
-        ETL_DATE,
-        ROW_ID,
-        CURRENT_TIMESTAMP()::TIMESTAMP_NTZ as LAST_UPDATED_DATE
+        {{ rejection_base_columns(
+            'RULE_TRN_008',
+            'MATURITY_DATE in the past',
+            'MATURITY_DATE must be today or in the future'
+        ) }}
     from staged
     where IS_MATURITY_VALID and not IS_MATURITY_NOT_EXPIRED
 ),

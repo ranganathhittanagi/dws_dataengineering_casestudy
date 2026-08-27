@@ -46,6 +46,23 @@ The pipeline is deployed on AWS EC2 and orchestrated by Apache Airflow:
 
 ---
 
+### AWS Services
+
+| AWS Service | Purpose |
+|---|---|
+| **Amazon EC2** | Hosts the Airflow control plane (webserver, scheduler, worker, Postgres, Redis) and a dev shell instance |
+| **Amazon S3** | Landing zone for batch trade CSV files and streaming trade files ingested by Snowpipe |
+| **Amazon SNS** | Delivers pipeline and infrastructure alerts; also receives S3 ObjectCreated events for streaming ingestion |
+| **AWS Systems Manager (SSM) Parameter Store** | Securely stores Snowflake RSA keys, Airflow secrets, and runtime configuration values |
+| **AWS IAM** | Instance profiles for EC2, trust roles for Snowflake S3 access, and least-privilege policy attachments |
+| **Amazon CloudWatch** | Collects Airflow task logs and triggers EC2 instance auto-recovery alarms |
+| **Amazon VPC** | Provides the network fabric: VPC, subnets, internet gateway, route tables, and security groups |
+| **AWS Application Load Balancer (ALB)** | Routes HTTP traffic to the Airflow webserver on the control EC2 instance |
+| **Amazon EBS** | Persistent block storage attached to the Airflow control EC2 instance |
+| **AWS KMS** | Encrypts SSM SecureString parameters |
+
+---
+
 ## Validation Logic
 
 ### Valid Trades
@@ -70,7 +87,7 @@ The pipeline is deployed on AWS EC2 and orchestrated by Apache Airflow:
 
 ### Prerequisites
 
-- AWS account with an IAM user/role that can create EC2, VPC, IAM, S3, SSM, CloudWatch, SNS, and DLM resources.
+- AWS account with an IAM user/role that can create EC2, VPC, IAM, S3, SSM, CloudWatch, and SNS.
 - Snowflake account with `ACCOUNTADMIN` access.
 - Terraform >= 1.5.0, AWS CLI, and Git installed on the deployment host.
 - An SSH key pair if you want SSH access to the EC2 instance (SSM access works without one).

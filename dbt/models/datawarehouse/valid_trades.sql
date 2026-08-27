@@ -41,7 +41,8 @@ stream_trades as (
         ETL_DATE,
         LAST_UPDATED_DATE
     from {{ ref('stg_trades_stream') }}
-    where IS_VALID
+    where ETL_DATE between '{{ late_arrival_date }}' and '{{ etl_date }}'
+        and IS_VALID
 
 ),
 

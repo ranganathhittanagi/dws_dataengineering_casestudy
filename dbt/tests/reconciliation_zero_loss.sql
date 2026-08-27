@@ -1,4 +1,4 @@
--- Reconciliation data test: every source record in the batch must be either
+-- Reconciliation data test: every source record (batch and stream) must be either
 -- accepted as a candidate or assigned to a distinct quarantined source record.
 -- Any non-zero unaccounted_rows is a zero-loss failure that blocks publication.
 

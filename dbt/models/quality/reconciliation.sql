@@ -7,9 +7,20 @@
 {%- set source_dates = source_window_dates('trades', etl_date) -%}
 {%- set late_arrival_date = source_dates[-1] -%}
 
-with raw_count as (
+with batch_raw_count as (
     select count(*) as cnt from {{ ref('trades') }}
     where ETL_DATE between '{{ late_arrival_date }}' and '{{ etl_date }}'
+),
+
+stream_raw_count as (
+    select count(*) as cnt from {{ source('raw', 'trades_stream') }}
+    where TO_VARCHAR(LOAD_TIMESTAMP, 'YYYY-MM-DD') between '{{ late_arrival_date }}' and '{{ etl_date }}'
+),
+
+raw_count as (
+    select b.cnt + s.cnt as cnt
+    from batch_raw_count b
+    cross join stream_raw_count s
 ),
 
 valid_count as (
@@ -18,7 +29,7 @@ valid_count as (
 ),
 
 quarantine_distinct as (
-    select count(distinct ROW_ID || '~' || ETL_DATE) as cnt
+    select count(distinct SOURCE_TYPE || '~' || ROW_ID || '~' || ETL_DATE) as cnt
     from {{ ref('rejected_trades') }}
     where ETL_DATE between '{{ late_arrival_date }}' and '{{ etl_date }}'
 )

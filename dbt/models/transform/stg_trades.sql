@@ -39,6 +39,7 @@ parsed as (
         TRY_CAST(TRIM(NOTIONAL) as NUMBER(18,2)) is not null and TRY_CAST(TRIM(NOTIONAL) as NUMBER(18,2)) > 0 as IS_NOTIONAL_VALID,
         TRIM(CURRENCY) is not null and TRIM(CURRENCY) in ({{ approved_currencies | join(', ') }}) as IS_CURRENCY_VALID,
         TRY_TO_DATE(TRIM(MATURITY_DATE)) is not null as IS_MATURITY_VALID,
+        TRY_TO_DATE(TRIM(MATURITY_DATE)) >= CURRENT_DATE() as IS_MATURITY_NOT_EXPIRED,
         TRY_TO_DATE(TRIM(EXECUTION_DATE)) is not null as IS_EXECUTION_VALID,
         (TRY_TO_DATE(TRIM(MATURITY_DATE)) is not null and TRY_TO_DATE(TRIM(EXECUTION_DATE)) is not null and TRY_TO_DATE(TRIM(MATURITY_DATE)) >= TRY_TO_DATE(TRIM(EXECUTION_DATE))) as IS_DATE_ORDER_VALID
 
@@ -77,6 +78,7 @@ final as (
         IS_NOTIONAL_VALID,
         IS_CURRENCY_VALID,
         IS_MATURITY_VALID,
+        IS_MATURITY_NOT_EXPIRED,
         IS_EXECUTION_VALID,
         IS_DATE_ORDER_VALID,
         IS_TRADE_ID_VALID
@@ -84,6 +86,7 @@ final as (
             and IS_NOTIONAL_VALID
             and IS_CURRENCY_VALID
             and IS_MATURITY_VALID
+            and IS_MATURITY_NOT_EXPIRED
             and IS_EXECUTION_VALID
             and IS_DATE_ORDER_VALID as IS_VALID
     from deduplicated

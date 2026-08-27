@@ -28,6 +28,8 @@ models:
         description: "True when CURRENCY is in the approved domain"
       - name: IS_MATURITY_VALID
         description: "True when MATURITY_DATE parses"
+      - name: IS_MATURITY_NOT_EXPIRED
+        description: "True when MATURITY_DATE is today or in the future"
       - name: IS_EXECUTION_VALID
         description: "True when EXECUTION_DATE parses"
       - name: IS_DATE_ORDER_VALID
@@ -70,6 +72,8 @@ models:
         description: "True when CURRENCY is in the approved domain"
       - name: IS_MATURITY_VALID
         description: "True when MATURITY_DATE parses"
+      - name: IS_MATURITY_NOT_EXPIRED
+        description: "True when MATURITY_DATE is today or in the future"
       - name: IS_EXECUTION_VALID
         description: "True when EXECUTION_DATE parses"
       - name: IS_DATE_ORDER_VALID

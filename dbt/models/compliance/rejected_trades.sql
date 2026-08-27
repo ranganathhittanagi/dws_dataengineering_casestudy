@@ -1,6 +1,6 @@
 {{ config(
     materialized='incremental',
-    unique_key=['SOURCE_FILENAME', 'ROW_ID', 'RULE_ID', 'ETL_DATE'],
+    unique_key=['ROW_ID', 'RULE_ID', 'ETL_DATE'],
     tags=['prepare_quality']
 ) }}
 
@@ -38,7 +38,6 @@ invalid_trade_id as (
         MATURITY_DATE,
         EXECUTION_DATE,
         ETL_DATE,
-        SOURCE_FILENAME,
         ROW_ID,
         CURRENT_TIMESTAMP()::TIMESTAMP_NTZ as LAST_UPDATED_DATE
     from staged
@@ -58,7 +57,6 @@ invalid_version as (
         MATURITY_DATE,
         EXECUTION_DATE,
         ETL_DATE,
-        SOURCE_FILENAME,
         ROW_ID,
         CURRENT_TIMESTAMP()::TIMESTAMP_NTZ as LAST_UPDATED_DATE
     from staged
@@ -78,7 +76,6 @@ invalid_notional as (
         MATURITY_DATE,
         EXECUTION_DATE,
         ETL_DATE,
-        SOURCE_FILENAME,
         ROW_ID,
         CURRENT_TIMESTAMP()::TIMESTAMP_NTZ as LAST_UPDATED_DATE
     from staged
@@ -98,7 +95,6 @@ invalid_currency as (
         MATURITY_DATE,
         EXECUTION_DATE,
         ETL_DATE,
-        SOURCE_FILENAME,
         ROW_ID,
         CURRENT_TIMESTAMP()::TIMESTAMP_NTZ as LAST_UPDATED_DATE
     from staged
@@ -118,7 +114,6 @@ invalid_maturity as (
         MATURITY_DATE,
         EXECUTION_DATE,
         ETL_DATE,
-        SOURCE_FILENAME,
         ROW_ID,
         CURRENT_TIMESTAMP()::TIMESTAMP_NTZ as LAST_UPDATED_DATE
     from staged
@@ -138,7 +133,6 @@ invalid_execution as (
         MATURITY_DATE,
         EXECUTION_DATE,
         ETL_DATE,
-        SOURCE_FILENAME,
         ROW_ID,
         CURRENT_TIMESTAMP()::TIMESTAMP_NTZ as LAST_UPDATED_DATE
     from staged
@@ -158,7 +152,6 @@ maturity_before_execution as (
         MATURITY_DATE,
         EXECUTION_DATE,
         ETL_DATE,
-        SOURCE_FILENAME,
         ROW_ID,
         CURRENT_TIMESTAMP()::TIMESTAMP_NTZ as LAST_UPDATED_DATE
     from staged
@@ -178,7 +171,6 @@ stale_version as (
         s.MATURITY_DATE,
         s.EXECUTION_DATE,
         s.ETL_DATE,
-        s.SOURCE_FILENAME,
         s.ROW_ID,
         CURRENT_TIMESTAMP()::TIMESTAMP_NTZ as LAST_UPDATED_DATE
     from staged s

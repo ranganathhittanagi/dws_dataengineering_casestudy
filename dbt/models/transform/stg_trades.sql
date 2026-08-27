@@ -20,7 +20,6 @@ with raw_trades as (
 parsed as (
 
     select
-        SOURCE_FILENAME,
         ROW_ID,
         ETL_DATE,
         LOAD_TIMESTAMP,
@@ -69,7 +68,6 @@ final as (
         CURRENCY,
         MATURITY_DATE,
         EXECUTION_DATE,
-        SOURCE_FILENAME,
         ROW_ID,
         ETL_DATE,
         LOAD_TIMESTAMP,

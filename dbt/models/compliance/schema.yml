@@ -30,8 +30,6 @@ models:
         description: "Parsed execution date"
       - name: ETL_DATE
         description: "The etl_date batch this row was processed for"
-      - name: SOURCE_FILENAME
-        description: "Source filename from the raw layer"
       - name: ROW_ID
         description: "Source row number from the raw layer"
       - name: LAST_UPDATED_DATE

@@ -18,7 +18,7 @@ valid_count as (
 ),
 
 quarantine_distinct as (
-    select count(distinct SOURCE_FILENAME || '~' || ROW_ID) as cnt
+    select count(distinct ROW_ID || '~' || ETL_DATE) as cnt
     from {{ ref('rejected_trades') }}
     where ETL_DATE between '{{ late_arrival_date }}' and '{{ etl_date }}'
 )

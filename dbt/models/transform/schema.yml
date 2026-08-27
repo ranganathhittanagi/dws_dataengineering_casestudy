@@ -34,8 +34,6 @@ models:
         description: "True when MATURITY_DATE >= EXECUTION_DATE (and both parse)"
       - name: IS_VALID
         description: "True when all per-field validity flags are true"
-      - name: SOURCE_FILENAME
-        description: "Source filename from the raw layer"
       - name: ROW_ID
         description: "Source row number from the raw layer"
       - name: ETL_DATE

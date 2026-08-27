@@ -38,8 +38,6 @@ candidates as (
         s.MATURITY_DATE,
         s.EXECUTION_DATE,
         s.ETL_DATE,
-        s.SOURCE_FILENAME,
-        s.ROW_ID,
         row_number() over (
             partition by s.TRADE_ID
             order by s.VERSION desc, s.ETL_DATE desc
@@ -66,8 +64,6 @@ accepted as (
             else 'ACTIVE'
         end as TRADE_STATUS,
         ETL_DATE,
-        SOURCE_FILENAME,
-        ROW_ID,
         CURRENT_TIMESTAMP()::TIMESTAMP_NTZ as LAST_UPDATED_DATE
     from candidates
     where rn = 1

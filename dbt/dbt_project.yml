@@ -19,6 +19,9 @@ clean-targets:
 
 vars:
   dq_observability_schema: "DQ_OBSERVABILITY"
+  source_windows:
+    trades:
+      late_arrival_days: 1
 
 flags:
   require_explicit_package_overrides_for_builtin_materializations: false

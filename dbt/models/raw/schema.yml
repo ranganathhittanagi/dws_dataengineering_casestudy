@@ -2,7 +2,13 @@ version: 2
 
 models:
   - name: trades
-    description: "Bronze layer - raw trades COPY-INTO'd from the CSV stage. All columns stored as VARCHAR so no row is lost to type-cast failure. Lineage fields (filename, source row number, batch id, invocation id, load timestamp) are preserved for traceability."
+    description: |
+      Bronze layer - raw trades loaded straight from the CSV stage. The custom
+      `copy_into_table` materialization scans the CSV header at runtime, so any
+      new columns that appear after the known seven are created as separate
+      Snowflake columns named after their header. Extra columns are retained here
+      in bronze and are not promoted to silver. The seven known columns and
+      lineage metadata are always present.
     columns:
       - name: TRADE_ID
         description: "Trade identifier (string)"

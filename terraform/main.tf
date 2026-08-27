@@ -136,6 +136,15 @@ resource "snowflake_file_format" "csv" {
   skip_header = 1
 }
 
+resource "snowflake_file_format" "csv_header" {
+  name        = "CSV_HEADER_FORMAT"
+  database    = snowflake_database.raw.name
+  schema      = snowflake_schema.raw.name
+  format_type = "CSV"
+  compression = "AUTO"
+  skip_header = 0
+}
+
 # External stage over the S3 landing prefix. dbt's raw model reads from this stage,
 # so the bronze table is populated straight from S3 with no local PUT step.
 resource "snowflake_stage" "raw_data" {
@@ -154,13 +163,17 @@ resource "snowflake_stage" "raw_data" {
 }
 
 resource "snowflake_grant_privileges_to_account_role" "file_format_usage" {
+  for_each = {
+    data   = snowflake_file_format.csv.name
+    header = snowflake_file_format.csv_header.name
+  }
+
   privileges        = ["USAGE"]
   account_role_name = snowflake_account_role.service_role.name
   on_schema_object {
     object_type = "FILE FORMAT"
-    object_name = "${var.raw_database_name}.${var.raw_schema_name}.${snowflake_file_format.csv.name}"
+    object_name = "${var.raw_database_name}.${var.raw_schema_name}.${each.value}"
   }
-  depends_on = [snowflake_file_format.csv]
 }
 
 resource "snowflake_grant_privileges_to_account_role" "stage_usage" {

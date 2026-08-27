@@ -1,6 +1,6 @@
 {{ config(
     materialized='incremental',
-    unique_key=['TRADE_ID', 'VERSION', 'ETL_DATE', 'SOURCE_ROW_NUMBER'],
+    unique_key=['TRADE_ID', 'VERSION', 'ETL_DATE', 'ROW_ID'],
     tags=['prepare_quality']
 ) }}
 
@@ -28,9 +28,8 @@ parsed as (
         MATURITY_DATE as RAW_MATURITY_DATE,
         EXECUTION_DATE as RAW_EXECUTION_DATE,
         SOURCE_FILENAME,
-        SOURCE_ROW_NUMBER,
+        ROW_ID,
         ETL_DATE,
-        DBT_INVOCATION_ID,
         LOAD_TIMESTAMP,
 
         TRIM(TRADE_ID) as TRADE_ID,
@@ -61,7 +60,7 @@ deduplicated as (
         *,
         row_number() over (
             partition by TRADE_ID, VERSION, ETL_DATE
-            order by SOURCE_ROW_NUMBER desc
+            order by ROW_ID desc
         ) as rn
     from parsed
 
@@ -85,9 +84,8 @@ final as (
         MATURITY_DATE,
         EXECUTION_DATE,
         SOURCE_FILENAME,
-        SOURCE_ROW_NUMBER,
+        ROW_ID,
         ETL_DATE,
-        DBT_INVOCATION_ID,
         LOAD_TIMESTAMP,
         LAST_UPDATED_DATE,
         IS_TRADE_ID_VALID,

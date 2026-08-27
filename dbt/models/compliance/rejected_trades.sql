@@ -1,6 +1,6 @@
 {{ config(
     materialized='incremental',
-    unique_key=['SOURCE_FILENAME', 'SOURCE_ROW_NUMBER', 'RULE_ID', 'ETL_DATE'],
+    unique_key=['SOURCE_FILENAME', 'ROW_ID', 'RULE_ID', 'ETL_DATE'],
     tags=['prepare_quality']
 ) }}
 
@@ -40,8 +40,7 @@ invalid_trade_id as (
         RAW_EXECUTION_DATE,
         ETL_DATE,
         SOURCE_FILENAME,
-        SOURCE_ROW_NUMBER,
-        DBT_INVOCATION_ID,
+        ROW_ID,
         CURRENT_TIMESTAMP()::TIMESTAMP_NTZ as LAST_UPDATED_DATE
     from staged
     where not IS_TRADE_ID_VALID
@@ -62,8 +61,7 @@ invalid_version as (
         RAW_EXECUTION_DATE,
         ETL_DATE,
         SOURCE_FILENAME,
-        SOURCE_ROW_NUMBER,
-        DBT_INVOCATION_ID,
+        ROW_ID,
         CURRENT_TIMESTAMP()::TIMESTAMP_NTZ as LAST_UPDATED_DATE
     from staged
     where not IS_VERSION_VALID
@@ -84,8 +82,7 @@ invalid_notional as (
         RAW_EXECUTION_DATE,
         ETL_DATE,
         SOURCE_FILENAME,
-        SOURCE_ROW_NUMBER,
-        DBT_INVOCATION_ID,
+        ROW_ID,
         CURRENT_TIMESTAMP()::TIMESTAMP_NTZ as LAST_UPDATED_DATE
     from staged
     where not IS_NOTIONAL_VALID
@@ -106,8 +103,7 @@ invalid_currency as (
         RAW_EXECUTION_DATE,
         ETL_DATE,
         SOURCE_FILENAME,
-        SOURCE_ROW_NUMBER,
-        DBT_INVOCATION_ID,
+        ROW_ID,
         CURRENT_TIMESTAMP()::TIMESTAMP_NTZ as LAST_UPDATED_DATE
     from staged
     where not IS_CURRENCY_VALID
@@ -128,8 +124,7 @@ invalid_maturity as (
         RAW_EXECUTION_DATE,
         ETL_DATE,
         SOURCE_FILENAME,
-        SOURCE_ROW_NUMBER,
-        DBT_INVOCATION_ID,
+        ROW_ID,
         CURRENT_TIMESTAMP()::TIMESTAMP_NTZ as LAST_UPDATED_DATE
     from staged
     where not IS_MATURITY_VALID
@@ -150,8 +145,7 @@ invalid_execution as (
         RAW_EXECUTION_DATE,
         ETL_DATE,
         SOURCE_FILENAME,
-        SOURCE_ROW_NUMBER,
-        DBT_INVOCATION_ID,
+        ROW_ID,
         CURRENT_TIMESTAMP()::TIMESTAMP_NTZ as LAST_UPDATED_DATE
     from staged
     where not IS_EXECUTION_VALID
@@ -172,8 +166,7 @@ maturity_before_execution as (
         RAW_EXECUTION_DATE,
         ETL_DATE,
         SOURCE_FILENAME,
-        SOURCE_ROW_NUMBER,
-        DBT_INVOCATION_ID,
+        ROW_ID,
         CURRENT_TIMESTAMP()::TIMESTAMP_NTZ as LAST_UPDATED_DATE
     from staged
     where IS_MATURITY_VALID and IS_EXECUTION_VALID and MATURITY_DATE < EXECUTION_DATE
@@ -194,8 +187,7 @@ stale_version as (
         s.RAW_EXECUTION_DATE,
         s.ETL_DATE,
         s.SOURCE_FILENAME,
-        s.SOURCE_ROW_NUMBER,
-        s.DBT_INVOCATION_ID,
+        s.ROW_ID,
         CURRENT_TIMESTAMP()::TIMESTAMP_NTZ as LAST_UPDATED_DATE
     from staged s
     left join existing_valid e

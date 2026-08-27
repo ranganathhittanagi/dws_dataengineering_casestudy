@@ -16,17 +16,16 @@
 {%- set copy_options = meta.get('copy_options', "ON_ERROR = 'ABORT_STATEMENT' FORCE = FALSE PURGE = FALSE") -%}
 {%- set pattern = meta.get('pattern', '.*') -%}
 {%- set known_columns = meta.get('known_columns', ['TRADE_ID', 'VERSION', 'COUNTERPARTY', 'NOTIONAL', 'CURRENCY', 'MATURITY_DATE', 'EXECUTION_DATE']) -%}
-{%- set metadata_columns = ['SOURCE_FILENAME', 'SOURCE_ROW_NUMBER', 'ETL_DATE', 'DBT_INVOCATION_ID', 'LOAD_TIMESTAMP'] -%}
+{%- set metadata_columns = ['SOURCE_FILENAME', 'ROW_ID', 'ETL_DATE', 'LOAD_TIMESTAMP'] -%}
 
 {%- set etl_date = var('etl_date', run_started_at.strftime('%Y-%m-%d')) -%}
-{%- set invocation = invocation_id -%}
 
 {%- if execute -%}
   {%- set header_scan_sql -%}
     select
-      {%- for i in range(1, 101) -%}
-        ${{ i }}::varchar as c{{ i }}{% if not loop.last %},{% endif %}
-      {%- endfor -%}
+{%- for i in range(1, 101) %}
+      ${{ i }}::varchar as c{{ i }}{% if not loop.last %},{% endif %}
+{%- endfor %}
     from {{ stage }} (FILE_FORMAT => '{{ header_file_format }}', PATTERN => '{{ pattern }}')
     where metadata$file_row_number = 1
   {%- endset -%}
@@ -84,22 +83,21 @@
 {%- if execute -%}
   {%- set create_ddl_sql -%}
     create table if not exists {{ target_relation }} as (
-      select
+      select{{ ' ' }}
         {%- for col in all_columns -%}
           {%- set col_unquoted = col | replace('"', '') -%}
           {%- if col in metadata_columns -%}
             {%- if col == 'SOURCE_FILENAME' -%}METADATA$FILENAME::VARCHAR
-            {%- elif col == 'SOURCE_ROW_NUMBER' -%}METADATA$FILE_ROW_NUMBER::VARCHAR
+            {%- elif col == 'ROW_ID' -%}METADATA$FILE_ROW_NUMBER::VARCHAR
             {%- elif col == 'ETL_DATE' -%}'{{ etl_date }}'::VARCHAR
-            {%- elif col == 'DBT_INVOCATION_ID' -%}'{{ invocation }}'::VARCHAR
             {%- elif col == 'LOAD_TIMESTAMP' -%}CURRENT_TIMESTAMP()::VARCHAR
             {%- endif -%}
           {%- elif col_unquoted in known_columns -%}
             ${{ file_col_positions[col_unquoted] }}::VARCHAR
           {%- else -%}
             ${{ file_col_positions[col_unquoted] }}::VARCHAR
-          {%- endif -%} as {{ col }}{% if not loop.last %},{% endif %}
-        {%- endfor -%}
+          {%- endif %} as {{ col }}{% if not loop.last %},{% endif %}
+        {%- endfor %}
       from {{ stage }} (FILE_FORMAT => '{{ file_format }}', PATTERN => '{{ pattern }}')
       where 1=0
     )
@@ -132,14 +130,13 @@
 {% call statement('main') -%}
   COPY INTO {{ target_relation }}
   FROM (
-    select
+    select{{ ' ' }}
       {%- for col in table_cols -%}
         {%- set col_unquoted = col | replace('"', '') -%}
         {%- if col_unquoted in metadata_columns -%}
           {%- if col_unquoted == 'SOURCE_FILENAME' -%}METADATA$FILENAME::VARCHAR
-          {%- elif col_unquoted == 'SOURCE_ROW_NUMBER' -%}METADATA$FILE_ROW_NUMBER::VARCHAR
+          {%- elif col_unquoted == 'ROW_ID' -%}METADATA$FILE_ROW_NUMBER::VARCHAR
           {%- elif col_unquoted == 'ETL_DATE' -%}'{{ etl_date }}'::VARCHAR
-          {%- elif col_unquoted == 'DBT_INVOCATION_ID' -%}'{{ invocation }}'::VARCHAR
           {%- elif col_unquoted == 'LOAD_TIMESTAMP' -%}CURRENT_TIMESTAMP()::VARCHAR
           {%- endif -%}
         {%- elif col_unquoted in file_col_positions -%}
@@ -147,7 +144,7 @@
         {%- else -%}
           NULL::VARCHAR
         {%- endif -%}{% if not loop.last %},{% endif %}
-      {%- endfor -%}
+      {%- endfor %}
     from {{ stage }} (PATTERN => '{{ pattern }}')
   )
   FILE_FORMAT = (FORMAT_NAME = {{ file_format }})

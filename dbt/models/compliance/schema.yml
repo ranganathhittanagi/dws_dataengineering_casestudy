@@ -34,9 +34,8 @@ models:
         description: "The etl_date batch this row was processed for"
       - name: SOURCE_FILENAME
         description: "Source filename from the raw layer"
-      - name: SOURCE_ROW_NUMBER
+      - name: ROW_ID
         description: "Source row number from the raw layer"
-      - name: DBT_INVOCATION_ID
         description: "dbt invocation/run identifier for lineage"
       - name: LAST_UPDATED_DATE
         description: "Timestamp of last quarantine write"

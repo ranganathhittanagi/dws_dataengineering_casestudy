@@ -28,14 +28,12 @@ models:
         description: "Full source file path from the stage"
         tests:
           - not_null
-      - name: SOURCE_ROW_NUMBER
+      - name: ROW_ID
         description: "Row number within the source file"
       - name: ETL_DATE
         description: "The etl_date batch this row was loaded for"
         tests:
           - not_null
-      - name: DBT_INVOCATION_ID
-        description: "dbt invocation/run identifier for lineage"
       - name: LOAD_TIMESTAMP
         description: "When the row was loaded into Snowflake"
         tests:

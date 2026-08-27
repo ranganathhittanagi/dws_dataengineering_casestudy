@@ -39,8 +39,7 @@ candidates as (
         s.EXECUTION_DATE,
         s.ETL_DATE,
         s.SOURCE_FILENAME,
-        s.SOURCE_ROW_NUMBER,
-        s.DBT_INVOCATION_ID,
+        s.ROW_ID,
         row_number() over (
             partition by s.TRADE_ID
             order by s.VERSION desc, s.ETL_DATE desc
@@ -68,8 +67,7 @@ accepted as (
         end as TRADE_STATUS,
         ETL_DATE,
         SOURCE_FILENAME,
-        SOURCE_ROW_NUMBER,
-        DBT_INVOCATION_ID,
+        ROW_ID,
         CURRENT_TIMESTAMP()::TIMESTAMP_NTZ as LAST_UPDATED_DATE
     from candidates
     where rn = 1

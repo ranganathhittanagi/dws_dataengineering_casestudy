@@ -50,12 +50,10 @@ models:
         description: "True when all per-field validity flags are true"
       - name: SOURCE_FILENAME
         description: "Source filename from the raw layer"
-      - name: SOURCE_ROW_NUMBER
+      - name: ROW_ID
         description: "Source row number from the raw layer"
       - name: ETL_DATE
         description: "The etl_date batch this row was processed for"
-      - name: DBT_INVOCATION_ID
-        description: "dbt invocation/run identifier for lineage"
       - name: LOAD_TIMESTAMP
         description: "When the source row was loaded"
       - name: LAST_UPDATED_DATE

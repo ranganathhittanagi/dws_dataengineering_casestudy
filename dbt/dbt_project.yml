@@ -29,6 +29,10 @@ flags:
   require_explicit_package_overrides_for_builtin_materializations: false
   source_freshness_run_project_hooks: true
 
+on-run-start:
+  - "{{ create_masking_policies() }}"
+  - "{{ create_row_access_policy() }}"
+
 on-run-end:
   - '{{ elementary.upload_dbt_artifacts() }}'
 
@@ -53,11 +57,19 @@ models:
       +materialized: incremental
       +database: DATAWAREHOUSE_DB
       +schema: DATAWAREHOUSE_SCHEMA
+      +post-hook:
+        - "{{ apply_access_policies() }}"
+      +grants:
+        select: [ "{{ env_var('SNOWFLAKE_ROLE') }}", "ACCOUNTADMIN", "DATA_ANALYSTS" ]
     compliance:
       +materialized: incremental
       +database: COMPLIANCE_DB
       +schema: COMPLIANCE_SCHEMA
       +tags: ["prepare_quality"]
+      +post-hook:
+        - "{{ apply_access_policies() }}"
+      +grants:
+        select: [ "{{ env_var('SNOWFLAKE_ROLE') }}", "ACCOUNTADMIN", "DATA_ANALYSTS" ]
     quality:
       +materialized: incremental
       +database: COMPLIANCE_DB
@@ -71,3 +83,5 @@ seeds:
   trade_data:
     +database: COMPLIANCE_DB
     +schema: COMPLIANCE_SCHEMA
+    currency_entitlements:
+      +schema: ACCESS_CONTROL

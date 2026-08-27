@@ -18,7 +18,12 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  dbt-ci:
+    uses: ./.github/workflows/dbt-ci.yml
+    secrets: inherit
+
   deploy:
+    needs: dbt-ci
     runs-on: ubuntu-latest
     environment: production
     steps:

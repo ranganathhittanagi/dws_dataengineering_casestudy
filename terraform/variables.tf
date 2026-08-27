@@ -235,3 +235,15 @@ variable "alert_emails" {
   description = "Email addresses subscribed to the SNS alert topic (each must confirm the subscription email once)"
   type        = list(string)
 }
+
+variable "consumer_role_names" {
+  description = "Consumer roles that can query the masked trade tables"
+  type        = list(string)
+  default     = ["DATA_ANALYSTS"]
+}
+
+variable "access_control_schema_name" {
+  description = "Schema in the compliance database that holds access-control objects (entitlements and policies)"
+  type        = string
+  default     = "ACCESS_CONTROL"
+}
